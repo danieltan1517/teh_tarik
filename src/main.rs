@@ -1,17 +1,34 @@
+use std::env;
 use std::fs;
 
 fn main() {
-    let filename = "foo.txt";
+    // get commandline arguments.
+    let args: Vec<String> = env::args().collect();
+    if args.len() == 1 {
+        println!("Please provide an input file.");
+        return;
+    }
+
+    if args.len() > 2 {
+        println!("Too many commandline arguments.");
+        return;
+    }
+
+    // read the entire file.
+    let filename = &args[1];
     let result = fs::read_to_string(filename);
-    match result {
+    let high_level_code = match result {
     Err(error) => {
         println!("**Error. File \"{}\": {}", filename, error);
         return;
     }
 
     Ok(code) => {
-
+      code
     } 
 
-    }
+    };
+
+    println!("Here is the high level code: ");
+    println!("{}", high_level_code);
 }
