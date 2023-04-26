@@ -29,6 +29,35 @@ fn main() {
 
     };
 
-    println!("Here is the high level code: ");
-    println!("{}", high_level_code);
+    lexer(&high_level_code);
 }
+
+enum TokenType<'a> {
+  FunctionKeyword(&'a str),
+  EOF
+}
+
+
+fn lexer(code: &str) -> (TokenType, &str) {
+    println!("Here is the high level code: ");
+    println!("{}", code);
+
+    for chr in code.chars() {
+      println!("{}", chr);
+
+    }
+
+    // split_at()
+    (TokenType::EOF, "");
+}
+
+
+
+
+
+
+
+
+
+
+
