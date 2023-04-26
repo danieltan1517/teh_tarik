@@ -44,11 +44,10 @@ fn lexer(code: &str) -> (TokenType, &str) {
 
     for chr in code.chars() {
       println!("{}", chr);
-
     }
 
     // split_at()
-    (TokenType::EOF, "");
+    return (TokenType::EOF, code);
 }
 
 
