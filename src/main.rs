@@ -33,78 +33,147 @@ fn main() {
     // lexing the code.
     
     let mut code: &str = &high_level_code;
-    println!("High Level Code: ");
-    println!("{} ", code);
-    println!("----------------");
-    let mut line_number = 1;
-    let mut col_number  = 1;
+    let mut line_number: usize = 1;
+    let mut col_number:  usize = 1;
+    let mut token_array: Vec<LexerToken> = vec![];
+
     loop {
       let (token, rest) = lexer(&code);
-      
+
       match token {
       TokenType::FunctionKeyword => {
-        println!("[func] KEYWORD");
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::FunctionKeyword,
+        });
+        col_number += 4;
       }
 
       TokenType::Whitespace => {
-        
+        col_number += code.len() - rest.len();
       }
 
       TokenType::Newline => {
-        println!("NEWLINE");
         line_number += 1;
         col_number = 1;
       }
      
-      TokenType::Identifier(token) => {
-        println!("IDENT [{}]", token);
+      TokenType::Identifier(ident) => {
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::Identifier(ident.clone()),
+        });
+        col_number += ident.len();
       }
 
       TokenType::LeftParenthesis => {
-        println!("LEFT PARENTHESIS '('");
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::LeftParenthesis,
+        });
+        col_number += 1;
       }
 
       TokenType::RightParenthesis => {
-        println!("RIGHT PARENTHESIS ')'");
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::RightParenthesis,
+        });
+        col_number += 1;
       }
 
       TokenType::Comma => {
-        println!("COMMA ','");
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::Comma,
+        });
+        col_number += 1;
       }
 
       TokenType::LeftCurlyBrace => {
-        println!("LEFT CURLY BRACE '{{'");
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::LeftCurlyBrace,
+        });
+        col_number += 1;
       }
 
       TokenType::RightCurlyBrace => {
-        println!("RIGHT CURLY BRACE '}}'");
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::RightCurlyBrace,
+        });
+        col_number += 1;
       }
+
       TokenType:: Semicolon => {
-        println!("SEMICOLON ';'");
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::Semicolon,
+        });
+        col_number += 1;
       }
 
       TokenType::Plus => {
-        println!("PLUS '+'");
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::Plus,
+        });
+        col_number += 1;
       }
 
       TokenType::Subtract => { 
-        println!("SUBTRACT '-'");
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::Subtract,
+        });
+        col_number += 1;
       }
 
       TokenType::Multiply => {
-        println!("MULTIPLY '*'");
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::Multiply,
+        });
+        col_number += 1;
       }
 
       TokenType::Divide => {
-        println!("DIVIDE '/'");
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::Divide,
+        });
+        col_number += 1;
       }
 
       TokenType::Modulus => {
-        println!("MODULUS '%'");
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::Modulus,
+        });
+        col_number += 1;
       }
 
       TokenType::Assign => {
-        println!("ASSIGN '='");
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::Assign,
+        });
+        col_number += 1;
       }
      
       TokenType::Error(message) => {
@@ -112,15 +181,23 @@ fn main() {
       }
      
       TokenType::EOF => {
-        println!("END OF FILE");
         break;
       }
      
       }
 
-      col_number += code.len() - rest.len();
       code = rest;
     }
+
+    for token in token_array {
+        println!("{}:{} => {:}", token.line, token.column, 1);
+    }
+}
+
+struct LexerToken {
+  line:       usize,
+  column:     usize,
+  token_type: TokenType,
 }
 
 enum TokenType {
@@ -156,12 +233,15 @@ enum TokenType {
 
 fn lexer(code: &str) -> (TokenType, &str) {
     let mut state = StateMachine::Init;
+    let mut token = TokenType::EOF;
+    let mut index = None::<usize>;
     for (i, chr) in code.chars().enumerate() {
+        index = Some(i);
         match state {
         StateMachine::Init => {
           if chr == '\n' || chr == '\r' {
-            let rest  = &code[i + 1..];
-            return (TokenType::Newline, rest);
+            token = TokenType::Newline;
+            break;
           } else if chr.is_whitespace() {
             state = StateMachine::Whitespace;
           } else if chr >= '0' && chr <= '9' {
@@ -169,44 +249,45 @@ fn lexer(code: &str) -> (TokenType, &str) {
           } else if chr.is_alphabetic() {
             state = StateMachine::Identifier;
           } else if chr == '(' {
-            let rest  = &code[i + 1..];
-            return (TokenType::LeftParenthesis, rest);
+            token = TokenType::LeftParenthesis;
+            break;
           } else if chr == ')' {
-            let rest  = &code[i + 1..];
-            return (TokenType::RightParenthesis, rest);
+            token = TokenType::RightParenthesis;
+            break;
           } else if chr == '{' {
-            let rest  = &code[i + 1..];
-            return (TokenType::LeftCurlyBrace, rest);
+            token = TokenType::LeftCurlyBrace;
+            break;
           } else if chr == '}' {
-            let rest  = &code[i + 1..];
-            return (TokenType::RightCurlyBrace, rest);
+            token = TokenType::RightCurlyBrace;
+            break;
           } else if chr == ',' {
-            return (TokenType::Comma, &code[1..]);
+            token = TokenType::Comma;
+            break;
           } else if chr == ';' {
-            let rest  = &code[i + 1..];
-            return (TokenType::Semicolon, rest);
+            token = TokenType::Semicolon;
+            break;
           } else if chr == '+' {
-            let rest  = &code[i + 1..];
-            return (TokenType::Plus, rest);
+            token = TokenType::Plus;
+            break;
           } else if chr == '-' {
-            let rest  = &code[i + 1..];
-            return (TokenType::Subtract, rest);
+            token = TokenType::Subtract;
+            break;
           } else if chr == '*' {
-            let rest  = &code[i + 1..];
-            return (TokenType::Multiply, rest);
+            token = TokenType::Multiply;
+            break;
           } else if chr == '/' {
-            let rest  = &code[i + 1..];
-            return (TokenType::Divide, rest);
+            token = TokenType::Divide;
+            break;
           } else if chr == '%' {
-            let rest  = &code[i + 1..];
-            return (TokenType::Modulus, rest);
+            token = TokenType::Modulus;
+            break;
           } else if chr == '=' {
-            let rest  = &code[i + 1..];
-            return (TokenType::Assign, rest);
+            token = TokenType::Assign;
+            break;
           } else {
             let message = format!("Unidentified symbol '{}'", chr);
-            let rest  = &code[i + 1..];
-            return (TokenType::Error(message), rest);
+            token = TokenType::Error(message);
+            break;
           }
         }
        
@@ -215,23 +296,22 @@ fn lexer(code: &str) -> (TokenType, &str) {
             state = StateMachine::Number;
           } else {
             let error_string = String::from("Numbers cannot have letters inside of them.");
-            return (TokenType::Error(error_string), "");
+            token = TokenType::Error(error_string);
+            break;
           }
         }
        
         StateMachine::Identifier => {
           if chr.is_whitespace() {
-            let token = &code[0..i];
-            let rest  = &code[i..];
-            let token_type = identifier_or_keyword(&token);
-            return (token_type, rest);
+            let ident = &code[0..i];
+            token = identifier_or_keyword(&ident);
+            break;
           } else if chr.is_alphabetic() || chr == '_' ||  (chr >= '0' && chr <= '9') {
             state = StateMachine::Identifier;
           } else {
-            let token = &code[0..i];
-            let rest  = &code[i..];
-            let token_type = identifier_or_keyword(&token);
-            return (token_type, rest);
+            let ident = &code[0..i];
+            token = identifier_or_keyword(&ident);
+            break;
           }
         }
 
@@ -239,16 +319,24 @@ fn lexer(code: &str) -> (TokenType, &str) {
           if chr.is_whitespace() {
             state = StateMachine::Whitespace;
           } else {
-            let rest = &code[i..];
-            return (TokenType::Whitespace, rest);
+            token = TokenType::Whitespace;
+            break;
           }
         }
 
         }
     }
 
-    // split_at()
-    return (TokenType::EOF, "");
+    match index {
+    None => {
+      return (token, code);
+    }
+    Some(idx) => {
+      let (_, rest) = code.split_at(if idx == 0 {1} else {idx});
+      return (token, rest);
+    }
+
+    } 
 
     enum StateMachine {
       Init,
