@@ -193,6 +193,24 @@ fn main() {
         });
         col_number += 6;
       }
+
+      TokenType::PrintKeyword => {
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::PrintKeyword,
+        });
+        col_number += 5;
+      }
+
+      TokenType::InputKeyword => {
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::InputKeyword,
+        });
+        col_number += 5;
+      }
      
       TokenType::Error(message) => {
         println!("**Error at line {}, column {}: {}", line_number, col_number, message);
@@ -228,6 +246,8 @@ enum TokenType {
   Newline,
   ReturnKeyword,
   IntKeyword,
+  PrintKeyword,
+  InputKeyword,
   Comma,
   Semicolon,
 
@@ -375,6 +395,12 @@ fn lexer(code: &str) -> (TokenType, &str) {
        }
        if "int".cmp(&token) == Ordering::Equal {
          return TokenType::IntKeyword;
+       }
+       if "print".cmp(&token) == Ordering::Equal {
+         return TokenType::PrintKeyword;
+       }
+       if "input".cmp(&token) == Ordering::Equal {
+         return TokenType::InputKeyword;
        }
 
        let ident: String = String::from(token);
