@@ -175,6 +175,15 @@ fn main() {
         });
         col_number += 1;
       }
+
+      TokenType::ReturnKeyword => {
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::ReturnKeyword,
+        });
+        col_number += 6;
+      }
      
       TokenType::Error(message) => {
         println!("**Error at line {}, column {}: {}", line_number, col_number, message);
@@ -208,6 +217,7 @@ enum TokenType {
   RightCurlyBrace,
   Whitespace,
   Newline,
+  ReturnKeyword,
   Comma,
   Semicolon,
 
@@ -349,6 +359,9 @@ fn lexer(code: &str) -> (TokenType, &str) {
     fn identifier_or_keyword(token: &str) -> TokenType {
        if "func".cmp(&token) == Ordering::Equal {
          return TokenType::FunctionKeyword;
+       }
+       if "return".cmp(&token) == Ordering::Equal {
+         return TokenType::ReturnKeyword;
        }
 
        let ident: String = String::from(token);
