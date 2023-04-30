@@ -626,14 +626,40 @@ fn parse_statement(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) ->
         return CodeNode::Epsilon;
     }
     Some(tok) => {
-        &tok.token_type
+        &tok
     }
 
     };
 
+    match t.token_type {
 
-    if matches!(t, TokenType::RightCurlyBrace) {
-        return CodeNode::Epsilon;
+    TokenType::RightCurlyBrace => {
+         return CodeNode::Epsilon;
+    }
+
+    TokenType::IntKeyword => {
+         // declaration.
+    }
+
+    TokenType::PrintKeyword => {
+         // do print parsing.
+    }
+
+    TokenType::InputKeyword => {
+         // do input keyword.
+    }
+
+    TokenType::Identifier(_) => {
+         // expression.
+    }
+
+    _ => {
+         let line = t.line;
+         let column = t.column;
+         let message = format!("**Error at line {}:{}. Invalid statement.", line, column);
+         return CodeNode::Error(message);
+    }
+
     }
 
     todo!()
