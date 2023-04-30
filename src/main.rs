@@ -432,9 +432,12 @@ fn parse_program(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>> ) -> 
     let mut func_count = 0;
     loop {
         let node = parse_function(&mut tokens);
-        println!("parse");
         match node {
         CodeNode::Epsilon => {
+            if func_count == 0 {
+                let message = String::from("**Error. No input detected.");
+                return CodeNode::Error(message);
+            }
             break;
         }
 
@@ -457,6 +460,7 @@ fn parse_function(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) -> 
     // parse 'func' keyword.
     let mut line: usize = 0;
     let mut column: usize = 0;
+
     match tokens.next() {
     None => {
       return CodeNode::Epsilon;
@@ -464,7 +468,9 @@ fn parse_function(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) -> 
 
     Some(tok) => {
         if matches!(tok.token_type, TokenType::FunctionKeyword) == false {
-            let message = format!("**Error at line {}:{}: Functions must begin with the 'func' keyword.", tok.line, tok.column);
+            line = tok.line;
+            column = tok.column;
+            let message = format!("**Error at line {}:{}: Functions must begin with the 'func' keyword.", line, column);
             return CodeNode::Error(message);
         }
     }
@@ -474,7 +480,7 @@ fn parse_function(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) -> 
     // parse 'ident' func.
     let func_ident = match tokens.next() {
     None => {
-        let message = String::from("**Error: expected function identifier.");
+        let message = format!("**Error at line {}:{}: expected function identifier.", line, column);
         return CodeNode::Error(message);
     }
 
@@ -487,7 +493,9 @@ fn parse_function(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) -> 
         }
 
         _ => {
-             let message = format!("**Error at line {}:{}. expected function identifier.", tok.line, tok.column);
+             line = tok.line;
+             column = tok.column;
+             let message = format!("**Error at line {}:{}. expected function identifier.", line, column);
              return CodeNode::Error(message);
         }
 
@@ -568,6 +576,24 @@ fn parse_function(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) -> 
 
     }
 
+    loop {
+        let node = parse_statement(&mut tokens);
+        match node {
+        CodeNode::Epsilon => {
+            break;
+        }
+
+        CodeNode::Error(ident) => {
+            return CodeNode::Error(ident);
+        }
+
+        CodeNode::Code(_) => {
+
+        }
+
+        }
+    }
+
     match tokens.next() {
     None => {
         let message = format!("**Error at line {}:{}. expected right curly brace.", line, column);
@@ -577,12 +603,13 @@ fn parse_function(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) -> 
     Some(tok) => {
         match tok.token_type {
         TokenType::RightCurlyBrace => {
-            line = tok.line;
-            column = tok.column;
+             return CodeNode::Code(format!("func {}", func_ident));
         }
 
         _ => {
-             let message = format!("**Error at line {}:{}. expected right curly brace.", tok.line, tok.column);
+             line = tok.line;
+             column = tok.column;
+             let message = format!("**Error at line {}:{}. expected right curly brace.", line, column);
              return CodeNode::Error(message);
         }
 
@@ -590,13 +617,26 @@ fn parse_function(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) -> 
     }
 
     }
-
-    return CodeNode::Code(format!("func {}", func_ident));
 }
 
 
+fn parse_statement(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) -> CodeNode {
+    let t = match tokens.peek() {
+    None => {
+        return CodeNode::Epsilon;
+    }
+    Some(tok) => {
+        &tok.token_type
+    }
+
+    };
 
 
+    if matches!(t, TokenType::RightCurlyBrace) {
+        return CodeNode::Epsilon;
+    }
 
+    todo!()
+}
 
 
