@@ -1,6 +1,7 @@
 use std::env;
 use std::fs;
 use std::cmp::Ordering;
+use std::iter::Peekable;
 
 fn main() {
     // get commandline arguments.
@@ -225,8 +226,20 @@ fn main() {
       code = rest;
     }
 
-    for token in token_array {
-        println!("{}:{} => {:}", token.line, token.column, 1);
+    let mut iter = token_array.into_iter().peekable();
+    let node = parse_program(&mut iter);
+    match node {
+
+    CodeNode::Code(code) => {
+        println!("{}", code);
+    }
+    CodeNode::Error(message) => {
+        println!("{}", message);
+    }
+    CodeNode::Epsilon => {
+        println!("**Error. There is no code provided.");
+    }
+
     }
 }
 
@@ -236,6 +249,13 @@ struct LexerToken {
   token_type: TokenType,
 }
 
+enum CodeNode {
+  Code(String),
+  Error(String),
+  Epsilon,
+}
+
+#[derive(Debug)]
 enum TokenType {
   FunctionKeyword,
   LeftParenthesis,
@@ -408,9 +428,171 @@ fn lexer(code: &str) -> (TokenType, &str) {
     }
 }
 
+fn parse_program(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>> ) -> CodeNode {
+    let mut func_count = 0;
+    loop {
+        let node = parse_function(&mut tokens);
+        println!("parse");
+        match node {
+        CodeNode::Epsilon => {
+            break;
+        }
 
+        CodeNode::Error(_) => {
+            return node;
+        }
 
+        CodeNode::Code(code) => {
+            func_count += 1;
+            println!("{}", code);
+        }
 
+        }
+    }
+
+    return CodeNode::Code(String::from("code"));
+}
+
+fn parse_function(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) -> CodeNode {
+    // parse 'func' keyword.
+    let mut line: usize = 0;
+    let mut column: usize = 0;
+    match tokens.next() {
+    None => {
+      return CodeNode::Epsilon;
+    }
+
+    Some(tok) => {
+        if matches!(tok.token_type, TokenType::FunctionKeyword) == false {
+            let message = format!("**Error at line {}:{}: Functions must begin with the 'func' keyword.", tok.line, tok.column);
+            return CodeNode::Error(message);
+        }
+    }
+
+    };
+   
+    // parse 'ident' func.
+    let func_ident = match tokens.next() {
+    None => {
+        let message = String::from("**Error: expected function identifier.");
+        return CodeNode::Error(message);
+    }
+
+    Some(tok) => {
+        match tok.token_type {
+        TokenType::Identifier(ident) => {
+            line = tok.line;
+            column = tok.column;
+            ident
+        }
+
+        _ => {
+             let message = format!("**Error at line {}:{}. expected function identifier.", tok.line, tok.column);
+             return CodeNode::Error(message);
+        }
+
+        }
+    }
+
+    };
+    
+    // todo!();
+    
+    match tokens.next() {
+    None => {
+        let message = format!("**Error at line {}:{}. expected left parenthesis.", line, column);
+        return CodeNode::Error(message);
+    }
+
+    Some(tok) => {
+        match tok.token_type {
+        TokenType::LeftParenthesis => {
+            line = tok.line;
+            column = tok.column;
+        }
+
+        _ => {
+             let message = format!("**Error at line {}:{}. expected left parenthesis.", tok.line, tok.column);
+             return CodeNode::Error(message);
+        }
+
+        }
+    }
+
+    }
+
+    // TODO: put function parameters
+    match tokens.next() {
+    None => {
+        let message = format!("**Error at line {}:{}. expected right parenthesis.", line, column);
+        return CodeNode::Error(message);
+    }
+
+    Some(tok) => {
+        match tok.token_type {
+        TokenType::RightParenthesis => {
+            line = tok.line;
+            column = tok.column;
+        }
+
+        _ => {
+             let message = format!("**Error at line {}:{}. expected right parenthesis.", tok.line, tok.column);
+             return CodeNode::Error(message);
+        }
+
+        }
+    }
+
+    }
+
+    match tokens.next() {
+    None => {
+        let message = format!("**Error at line {}:{}. expected left curly brace.", line, column);
+        return CodeNode::Error(message);
+    }
+
+    Some(tok) => {
+        match tok.token_type {
+        TokenType::LeftCurlyBrace => {
+            line = tok.line;
+            column = tok.column;
+        }
+
+        _ => {
+             let message = format!("**Error at line {}:{}. expected left curly brace.", tok.line, tok.column);
+             return CodeNode::Error(message);
+        }
+
+        }
+    }
+
+    }
+
+    match tokens.next() {
+    None => {
+        let message = format!("**Error at line {}:{}. expected right curly brace.", line, column);
+        return CodeNode::Error(message);
+    }
+
+    Some(tok) => {
+        match tok.token_type {
+        TokenType::RightCurlyBrace => {
+            line = tok.line;
+            column = tok.column;
+        }
+
+        _ => {
+             let message = format!("**Error at line {}:{}. expected right curly brace.", tok.line, tok.column);
+             return CodeNode::Error(message);
+        }
+
+        }
+    }
+
+    }
+
+    return CodeNode::Code(format!("func {}", func_ident));
+}
 
 
 

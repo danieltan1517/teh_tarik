@@ -1,4 +1,1 @@
-func main(int a, int b) {
-    c = a + b;
-    return c;
-}
+func main() {    }
