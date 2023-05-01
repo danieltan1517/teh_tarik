@@ -40,7 +40,6 @@ fn main() {
 
     loop {
       let (token, rest) = lexer(&code);
-
       match token {
       TokenType::FunctionKeyword => {
         token_array.push(LexerToken {
@@ -67,6 +66,14 @@ fn main() {
           token_type : TokenType::Identifier(ident.clone()),
         });
         col_number += ident.len();
+      }
+      TokenType::Number(num) => {
+        token_array.push(LexerToken {
+          line : line_number,
+          column : col_number,
+          token_type : TokenType::Number(num.clone()),
+        });
+        col_number += num.len();
       }
 
       TokenType::LeftParenthesis => {
@@ -287,6 +294,7 @@ enum TokenType {
   GreaterEqual,*/
 
   Identifier(String),
+  Number(String),
   Error(String),
   EOF,
 }
@@ -354,9 +362,13 @@ fn lexer(code: &str) -> (TokenType, &str) {
         StateMachine::Number => {
           if chr >= '0' && chr <= '9' {
             state = StateMachine::Number;
-          } else {
+          } else if chr.is_alphabetic() {
             let error_string = String::from("Numbers cannot have letters inside of them.");
             token = TokenType::Error(error_string);
+            break;
+          } else if chr.is_whitespace() {
+            let number = String::from(&code[0..i]);
+            token = TokenType::Number(number);
             break;
           }
         }
@@ -804,8 +816,50 @@ fn parse_multiply_expression(mut tokens: &mut Peekable<std::vec::IntoIter<LexerT
     return CodeNode::Code(String::from(""));
 }
 
-fn parse_term(tokens: &mut Peekable<std::vec::IntoIter<LexerToken>> ) -> CodeNode {
-    return CodeNode::Code(String::from(""));
+fn parse_term(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>> ) -> CodeNode {
+    // return CodeNode::Code(String::from(""));
+    match tokens.next() {
+    None => {
+        return CodeNode::Error(String::from(""));
+    }
+    Some(tok) => {
+        match tok.token_type {
+        TokenType::Identifier(_) => {
+            return CodeNode::Code(String::from(""));
+
+        }
+
+        TokenType::Number(_) => {
+            return CodeNode::Code(String::from(""));
+        }
+
+        TokenType::LeftParenthesis => {
+            parse_expression(&mut tokens);
+
+            match tokens.next() {
+            None => {
+                return CodeNode::Error(String::from(""));
+            }
+
+            Some(tok) => {
+                if matches!(tok.token_type, TokenType::RightParenthesis) == false {
+                     return CodeNode::Error(String::from(""));
+                }
+
+                return CodeNode::Error(String::from(""));
+            }
+
+            }
+        }
+
+        _ => {
+            return CodeNode::Error(String::from(""));
+        }
+
+        }
+    }
+
+    }
 }
 
 

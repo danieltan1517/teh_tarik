@@ -1,5 +1,5 @@
 func add() {
-   a =;
+   a = b + (c + c * c) + d / e - ;
 }
 
 func mult() {
