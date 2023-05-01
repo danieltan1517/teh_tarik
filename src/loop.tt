@@ -1,6 +1,7 @@
 func add() {
-
+   a =;
 }
+
 func mult() {
 
 }

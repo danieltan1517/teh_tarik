@@ -621,17 +621,17 @@ fn parse_function(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) -> 
 
 
 fn parse_statement(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) -> CodeNode {
-    let t = match tokens.peek() {
+    let tok = match tokens.peek() {
     None => {
         return CodeNode::Epsilon;
     }
     Some(tok) => {
-        &tok
+        tok
     }
 
     };
 
-    match t.token_type {
+    match tok.token_type {
 
     TokenType::RightCurlyBrace => {
          return CodeNode::Epsilon;
@@ -639,6 +639,8 @@ fn parse_statement(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) ->
 
     TokenType::IntKeyword => {
          // declaration.
+         tokens.next();
+         parse_declaration(&mut tokens);
     }
 
     TokenType::PrintKeyword => {
@@ -651,18 +653,161 @@ fn parse_statement(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) ->
 
     TokenType::Identifier(_) => {
          // expression.
+         tokens.next();
+
+         match tokens.next() {
+
+         None => {
+             let message = format!("**Error. Invalid expression statement.");
+             return CodeNode::Error(message);
+         }
+
+         Some(tok) => {
+             if matches!(tok.token_type, TokenType::Assign) == false {
+                 let line = tok.line;
+                 let column = tok.column;
+                 let message = format!("**Error at line {}:{}. Expected assignment '=' statement.", line, column);
+                 return CodeNode::Error(message);
+             }
+         }
+
+         }
+
+         parse_expression(&mut tokens);
+
     }
 
     _ => {
-         let line = t.line;
-         let column = t.column;
+         let line = tok.line;
+         let column = tok.column;
          let message = format!("**Error at line {}:{}. Invalid statement.", line, column);
          return CodeNode::Error(message);
     }
 
     }
 
-    todo!()
+    match tokens.next() {
+    None => {
+        let code: String = String::from("");
+        return CodeNode::Code(code);
+    }
+
+    Some(tok) => {
+        match tok.token_type {
+
+        TokenType::Semicolon => {
+             let code: String = String::from("");
+             return CodeNode::Code(code);
+        }
+ 
+        _ => {
+             let line = tok.line;
+             let column = tok.column;
+             let message = format!("**Error at line {}:{}. Statements must end with a semicolon.", line, column);
+             return CodeNode::Error(message);
+        }
+
+        }
+    }
+
+    }  
 }
+
+fn parse_declaration(tokens: &mut Peekable<std::vec::IntoIter<LexerToken>> ) -> CodeNode {
+    match tokens.next() {
+    None => {
+        let message = format!("**Error. Invalid statement.");
+        return CodeNode::Error(message);
+    }
+
+    Some(tok) => {
+        match &tok.token_type {
+       
+        TokenType::Identifier(ident) => {
+             // expression.
+             return CodeNode::Code(ident.to_string());
+        }
+       
+        _ => {
+             let line = tok.line;
+             let column = tok.column;
+             let message = format!("**Error at line {}:{}. Invalid declaration statement. Expected identifier", line, column);
+             return CodeNode::Error(message);
+        }
+
+        }
+    }
+
+    }
+}
+
+fn parse_expression(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>> ) -> CodeNode {
+    parse_multiply_expression(&mut tokens);
+    loop {
+        match tokens.peek() {
+        None => {
+            return CodeNode::Code(String::from(""));
+        }
+        Some(tok) => {
+            match tok.token_type {
+            TokenType::Plus => {
+                tokens.next();
+                parse_multiply_expression(&mut tokens);
+            }
+
+            TokenType::Subtract => {
+                tokens.next();
+                parse_multiply_expression(&mut tokens);
+            }
+
+            _ => {
+                 break;
+           
+            }
+
+            }
+        }
+
+        }
+    }
+    return CodeNode::Code(String::from(""));
+}
+
+fn parse_multiply_expression(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>> ) -> CodeNode {
+    parse_term(&mut tokens);
+    loop {
+        match tokens.peek() {
+        None => {
+            return CodeNode::Code(String::from(""));
+        }
+        Some(tok) => {
+            match tok.token_type {
+            TokenType::Multiply => {
+                tokens.next();
+                parse_term(&mut tokens);
+            }
+
+            TokenType::Divide => {
+                tokens.next();
+                parse_term(&mut tokens);
+            }
+
+            _ => {
+                 break;
+            }
+
+            }
+        }
+
+        }
+    }
+    return CodeNode::Code(String::from(""));
+}
+
+fn parse_term(tokens: &mut Peekable<std::vec::IntoIter<LexerToken>> ) -> CodeNode {
+    return CodeNode::Code(String::from(""));
+}
+
+
 
 
