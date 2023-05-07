@@ -1,7 +1,6 @@
 use std::env;
 use std::fs;
-use std::cmp::Ordering;
-use std::iter::Peekable;
+use std::error::Error;
 
 fn main() {
     // get commandline arguments.
@@ -19,7 +18,7 @@ fn main() {
     // read the entire file.
     let filename = &args[1];
     let result = fs::read_to_string(filename);
-    let high_level_code = match result {
+    let code = match result {
     Err(error) => {
         println!("**Error. File \"{}\": {}", filename, error);
         return;
@@ -31,260 +30,138 @@ fn main() {
 
     };
 
-    // lexing the code.
+    let tokens = match lex(&code) {
+    Err(error_message) => {
+        println!("**Error**");
+        println!("----------------------");
+        println!("{}", error_message);
+        println!("----------------------");
+        return;
+    }
+
+    Ok(data) => data,
     
-    let mut code: &str = &high_level_code;
-    let mut line_number: usize = 1;
-    let mut col_number:  usize = 1;
-    let mut token_array: Vec<LexerToken> = vec![];
+    };
+    
+    let mut index: usize = 0;
+    match parse_program(&tokens, &mut index) {
 
-    loop {
-      let (token, rest) = lexer(&code);
-      match token {
-      TokenType::FunctionKeyword => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::FunctionKeyword,
-        });
-        col_number += 4;
-      }
-
-      TokenType::Whitespace => {
-        col_number += code.len() - rest.len();
-      }
-
-      TokenType::Newline => {
-        line_number += 1;
-        col_number = 1;
-      }
-     
-      TokenType::Identifier(ident) => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::Identifier(ident.clone()),
-        });
-        col_number += ident.len();
-      }
-      TokenType::Number(num) => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::Number(num.clone()),
-        });
-        col_number += num.len();
-      }
-
-      TokenType::LeftParenthesis => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::LeftParenthesis,
-        });
-        col_number += 1;
-      }
-
-      TokenType::RightParenthesis => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::RightParenthesis,
-        });
-        col_number += 1;
-      }
-
-      TokenType::Comma => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::Comma,
-        });
-        col_number += 1;
-      }
-
-      TokenType::LeftCurlyBrace => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::LeftCurlyBrace,
-        });
-        col_number += 1;
-      }
-
-      TokenType::RightCurlyBrace => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::RightCurlyBrace,
-        });
-        col_number += 1;
-      }
-
-      TokenType::IntKeyword => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::IntKeyword,
-        });
-        col_number += 3;
-      }
-
-      TokenType:: Semicolon => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::Semicolon,
-        });
-        col_number += 1;
-      }
-
-      TokenType::Plus => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::Plus,
-        });
-        col_number += 1;
-      }
-
-      TokenType::Subtract => { 
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::Subtract,
-        });
-        col_number += 1;
-      }
-
-      TokenType::Multiply => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::Multiply,
-        });
-        col_number += 1;
-      }
-
-      TokenType::Divide => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::Divide,
-        });
-        col_number += 1;
-      }
-
-      TokenType::Modulus => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::Modulus,
-        });
-        col_number += 1;
-      }
-
-      TokenType::Assign => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::Assign,
-        });
-        col_number += 1;
-      }
-
-      TokenType::ReturnKeyword => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::ReturnKeyword,
-        });
-        col_number += 6;
-      }
-
-      TokenType::PrintKeyword => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::PrintKeyword,
-        });
-        col_number += 5;
-      }
-
-      TokenType::InputKeyword => {
-        token_array.push(LexerToken {
-          line : line_number,
-          column : col_number,
-          token_type : TokenType::InputKeyword,
-        });
-        col_number += 5;
-      }
-     
-      TokenType::Error(message) => {
-        println!("**Error at line {}, column {}: {}", line_number, col_number, message);
-      }
-     
-      TokenType::EOF => {
-        break;
-      }
-     
-      }
-
-      code = rest;
+    Ok(generated_code) => {
+        println!("{}", generated_code);
     }
 
-    let mut iter = token_array.into_iter().peekable();
-    let node = parse_program(&mut iter);
-    match node {
+    Err(message) => {
+        println!("**Error**");
+        println!("----------------------");
+        if tokens.len() == 0 {
+            println!("No code has been provided.");
+        } else if index >= tokens.len() {
+            index = tokens.len() - 1;
+            let tok = &tokens[index];
+            print_error(tok, &message);
+        } else {
+            let tok = &tokens[index];
+            print_error(tok, &message);
+        }
 
-    CodeNode::Code(code) => {
-        println!("{}", code);
-    }
-    CodeNode::Error(message) => {
-        println!("{}", message);
-    }
-    CodeNode::Epsilon => {
-        println!("**Error. There is no code provided.");
     }
 
     }
-}
 
-struct LexerToken {
-  line:       usize,
-  column:     usize,
-  token_type: TokenType,
-}
+    fn print_error<T: std::fmt::Display>(tok: &Token, message: T) {
+        match tok {
+        Token::Func(line, col) => {
+            println!("Error at line {}:{}. {}", line, col, message);
+        }
+        Token::Return(line, col) => {
+            println!("Error at line {}:{}. unexpected 'return' keyword. {}", line, col, message);
+        }
+        Token::Int(line, col) => {
+            println!("Error at line {}:{}. unexpected 'int' keyword. {}", line, col, message);
+        }
+        Token::Print(line, col) => {
+            println!("Error at line {}:{}. unexpected 'print' keyword. {}", line, col, message);
+        }
+        Token::Read(line, col) => {
+            println!("Error at line {}:{}. unexpected 'read' keyword. {}", line, col, message);
+        }
 
-enum CodeNode {
-  Code(String),
-  Error(String),
-  Epsilon,
+        Token::LeftParen(line, col) => {
+            println!("Error at line {}:{}. unexpected '('. {}", line, col, message);
+        }
+        Token::RightParen(line, col) => {
+            println!("Error at line {}:{}. unexpected ')'. {}", line, col, message);
+        }
+        Token::LeftCurly(line, col) => {
+            println!("Error at line {}:{}. unexpected '{{'. {}", line, col, message);
+        }
+        Token::RightCurly(line, col) => {
+            println!("Error at line {}:{}. unexpected '}}'. {}", line, col, message);
+        }
+        Token::Comma(line, col) => {
+            println!("Error at line {}:{}. unexpected ','. {}", line, col, message);
+        }
+        Token::Semicolon(line, col) => {
+            println!("Error at line {}:{}. unexpected ';'. {}", line, col, message);
+        }
+
+        Token::Plus(line, col) => {
+            println!("Error at line {}:{}. unexpected '+'. {}", line, col, message);
+        }
+        Token::Subtract(line, col) => {
+            println!("Error at line {}:{}. unexpected '-'. {}", line, col, message);
+        }
+        Token::Multiply(line, col) => {
+            println!("Error at line {}:{}. unexpected '*'. {}", line, col, message);
+        }
+        Token::Divide(line, col) => {
+            println!("Error at line {}:{}. unexpected '/'. {}", line, col, message);
+        }
+        Token::Modulus(line, col) => {
+            println!("Error at line {}:{}. unexpected '%'. {}", line, col, message);
+        }
+        Token::Assign(line, col) => {
+            println!("Error at line {}:{}. unexpected '='. {}", line, col, message);
+        }
+
+        Token::Ident(line, col, ident) => {
+            println!("Error at line {}:{}. invalid identifier {}. {}", line, col, ident, message);
+        }
+        Token::Num(line, col, num) => {
+            println!("Error at line {}:{}. invalid identifier {}. {}", line, col, num, message);
+        }
+
+        }
+        println!("----------------------");
+    }
+
+
+
 }
 
 #[derive(Debug)]
-enum TokenType {
-  FunctionKeyword,
-  LeftParenthesis,
-  RightParenthesis,
-  LeftCurlyBrace,
-  RightCurlyBrace,
-  Whitespace,
-  Newline,
-  ReturnKeyword,
-  IntKeyword,
-  PrintKeyword,
-  InputKeyword,
-  Comma,
-  Semicolon,
+enum Token {
+  // keywords:
+  Func(i32, i32),
+  Return(i32, i32),
+  Int(i32, i32),
+  Print(i32, i32),
+  Read(i32, i32),
+
+  LeftParen(i32, i32),
+  RightParen(i32, i32),
+  LeftCurly(i32, i32),
+  RightCurly(i32, i32),
+  Comma(i32, i32),
+  Semicolon(i32, i32),
 
   // mathematical operators.
-  Plus,
-  Subtract,
-  Multiply,
-  Divide,
-  Modulus,
-  Assign, // =
+  Plus(i32, i32),
+  Subtract(i32, i32),
+  Multiply(i32, i32),
+  Divide(i32, i32),
+  Modulus(i32, i32),
+  Assign(i32, i32), // =
 
   // comparison operators
   /*Less,
@@ -293,574 +170,485 @@ enum TokenType {
   Greater,
   GreaterEqual,*/
 
-  Identifier(String),
-  Number(String),
-  Error(String),
-  EOF,
+  Ident(i32, i32, String),
+  Num(i32, i32, i32),
 }
 
-fn lexer(code: &str) -> (TokenType, &str) {
-    let mut state = StateMachine::Init;
-    let mut token = TokenType::EOF;
-    let mut index = None::<usize>;
-    for (i, chr) in code.chars().enumerate() {
-        index = Some(i);
-        match state {
+fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
+    let mut tokens: Vec<Token> = vec![];
+    let mut token_start: usize = 0;
+    let mut token_end:   usize = 0;
+    let mut line_num:    i32   = 1;
+    let mut col_num:     i32   = 1;
+    let mut state_machine = StateMachine::Init;
+
+    for character in code.chars() {
+
+        // transitions.
+        state_machine = match state_machine {
+
         StateMachine::Init => {
-          if chr == '\n' || chr == '\r' {
-            token = TokenType::Newline;
-            break;
-          } else if chr.is_whitespace() {
-            state = StateMachine::Whitespace;
-          } else if chr >= '0' && chr <= '9' {
-            state = StateMachine::Number;
-          } else if chr.is_alphabetic() {
-            state = StateMachine::Identifier;
-          } else if chr == '(' {
-            token = TokenType::LeftParenthesis;
-            break;
-          } else if chr == ')' {
-            token = TokenType::RightParenthesis;
-            break;
-          } else if chr == '{' {
-            token = TokenType::LeftCurlyBrace;
-            break;
-          } else if chr == '}' {
-            token = TokenType::RightCurlyBrace;
-            break;
-          } else if chr == ',' {
-            token = TokenType::Comma;
-            break;
-          } else if chr == ';' {
-            token = TokenType::Semicolon;
-            break;
-          } else if chr == '+' {
-            token = TokenType::Plus;
-            break;
-          } else if chr == '-' {
-            token = TokenType::Subtract;
-            break;
-          } else if chr == '*' {
-            token = TokenType::Multiply;
-            break;
-          } else if chr == '/' {
-            token = TokenType::Divide;
-            break;
-          } else if chr == '%' {
-            token = TokenType::Modulus;
-            break;
-          } else if chr == '=' {
-            token = TokenType::Assign;
-            break;
-          } else {
-            let message = format!("Unidentified symbol '{}'", chr);
-            token = TokenType::Error(message);
-            break;
-          }
+            token_start = token_end;
+            if character.is_alphabetic() {
+                StateMachine::Ident
+            } else if character >= '0' && character <= '9' {
+                StateMachine::Number
+            } else {
+                StateMachine::Init
+            }
         }
-       
+
         StateMachine::Number => {
-          if chr >= '0' && chr <= '9' {
-            state = StateMachine::Number;
-          } else if chr.is_alphabetic() {
-            let error_string = String::from("Numbers cannot have letters inside of them.");
-            token = TokenType::Error(error_string);
-            break;
-          } else if chr.is_whitespace() {
-            let number = String::from(&code[0..i]);
-            token = TokenType::Number(number);
-            break;
-          }
-        }
-       
-        StateMachine::Identifier => {
-          if chr.is_whitespace() {
-            let ident = &code[0..i];
-            token = identifier_or_keyword(&ident);
-            break;
-          } else if chr.is_alphabetic() || chr == '_' ||  (chr >= '0' && chr <= '9') {
-            state = StateMachine::Identifier;
-          } else {
-            let ident = &code[0..i];
-            token = identifier_or_keyword(&ident);
-            break;
-          }
+            if character >= '0' && character <= '9' {
+                StateMachine::Number
+            } else if character.is_alphabetic() || character == '_' {
+                StateMachine::ErrorNum
+            } else {
+                let number = create_number(token_start, token_end, code);
+                tokens.push(Token::Num(line_num, (token_start + 1) as i32, number));
+                StateMachine::Init
+            }
         }
 
-        StateMachine::Whitespace => {
-          if chr.is_whitespace() {
-            state = StateMachine::Whitespace;
-          } else {
-            token = TokenType::Whitespace;
-            break;
-          }
+        StateMachine::Ident => {
+            if character.is_alphabetic() || (character >= '0' && character <= '9') || character == '_' {
+                StateMachine::Ident
+            } else {
+                let ident = create_identifier(line_num, (token_start + 1) as i32, token_start, token_end, code);
+                tokens.push(ident);
+                token_start = token_end;
+                StateMachine::Init
+            }
         }
 
+        StateMachine::ErrorNum => StateMachine::ErrorNum,
+
+        };
+
+        token_end += 1;
+
+        // actions of state machine.
+        match state_machine {
+
+        StateMachine::Init => {
+             // token_start = token_end;
+             match character {
+             '+' => tokens.push(Token::Plus(line_num,col_num)),
+             '-' => tokens.push(Token::Subtract(line_num,col_num)),
+             '*' => tokens.push(Token::Multiply(line_num,col_num)),
+             '/' => tokens.push(Token::Divide(line_num,col_num)),
+             '%' => tokens.push(Token::Modulus(line_num,col_num)),
+             ',' => tokens.push(Token::Comma(line_num,col_num)),
+             '{' => tokens.push(Token::LeftCurly(line_num,col_num)),
+             '}' => tokens.push(Token::RightCurly(line_num,col_num)),
+             '(' => tokens.push(Token::LeftParen(line_num,col_num)),
+             ')' => tokens.push(Token::RightParen(line_num,col_num)),
+             ';' => tokens.push(Token::Semicolon(line_num,col_num)),
+             '=' => tokens.push(Token::Assign(line_num,col_num)),
+              _  => {
+                 if !character.is_whitespace() {
+                     let ident = &code[token_start..token_end];
+                     let message = format!("Error at line {}:{}. Unidentified symbol '{}'", line_num, col_num, ident);
+                     return Err(Box::from(message));
+                 }
+             }
+
+             }
+        }
+
+        StateMachine::Number => {
+
+        }
+
+        StateMachine::Ident => {
+
+        }
+
+        StateMachine::ErrorNum => {
+            if character == ' ' {
+                let ident = &code[token_start..token_end];
+                let message = format!("Error at line {}:{}. Invalid Number '{}'", line_num, col_num, ident);
+                return Err(Box::from(message));
+            }
+        }
+
+        };
+
+        if character == '\n' {
+            col_num = 1;
+            line_num += 1;
+        } else {
+            col_num += 1;
         }
     }
 
-    match index {
-    None => {
-      return (token, code);
-    }
-    Some(idx) => {
-      let (_, rest) = code.split_at(if idx == 0 {1} else {idx});
-      return (token, rest);
+    return Ok(tokens);
+
+    // helper functions
+    fn create_identifier(line: i32, col: i32, token_start: usize, token_end: usize, code: &str) -> Token {
+        let token = &code[token_start..token_end];
+        match token {
+        "func" => Token::Func(line, col),
+        "return" => Token::Return(line, col),
+        "int" => Token::Int(line, col),
+        "print" => Token::Print(line, col),
+        "read" => Token::Read(line, col),
+        _ => Token::Ident(line, col, String::from(token))
+        }
     }
 
-    } 
+    fn create_number(token_start: usize, token_end: usize, code: &str) -> i32 {
+        let token = &code[token_start..token_end];
+        match token.parse::<i32>() {
+        // this code should correctly parse because the lexer verified that this is correct.
+        // quit.
+        Err(_) => panic!("Error. Logic Error: Lexer failed to lex number \"{token}\" correctly"),
+        Ok(num) => num,
+        }
+    }
 
     enum StateMachine {
-      Init,
-      Number,
-      Identifier,
-      Whitespace,
+        Init,
+        Number,
+        Ident,
+        ErrorNum,
     }
 
-    // subfunction to determine whether it is an identifier or keyword.
-    fn identifier_or_keyword(token: &str) -> TokenType {
-       if "func".cmp(&token) == Ordering::Equal {
-         return TokenType::FunctionKeyword;
-       }
-       if "return".cmp(&token) == Ordering::Equal {
-         return TokenType::ReturnKeyword;
-       }
-       if "int".cmp(&token) == Ordering::Equal {
-         return TokenType::IntKeyword;
-       }
-       if "print".cmp(&token) == Ordering::Equal {
-         return TokenType::PrintKeyword;
-       }
-       if "input".cmp(&token) == Ordering::Equal {
-         return TokenType::InputKeyword;
-       }
+}
 
-       let ident: String = String::from(token);
-       return TokenType::Identifier(ident);
+// the <'a> is the "lifetimes" type annotations in Rust.
+//
+fn peek<'a>(tokens: &'a Vec<Token>, index: usize) -> Option<&'a Token> {
+    if index < tokens.len() {
+        return Some(&tokens[index])
+    } else {
+        return None
     }
 }
 
-fn parse_program(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>> ) -> CodeNode {
-    let mut func_count = 0;
+fn peek_error<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box<dyn Error>> {
+    if index < tokens.len() {
+        return Ok(&tokens[index])
+    } else {
+        return Err(Box::from("expected a token, but got nothing"))
+    }
+}
+
+fn next<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Option<&'a Token> {
+    if *index < tokens.len() {
+        let ret = *index;
+        *index += 1;
+        return Some(&tokens[ret])
+    } else {
+        return None
+    }
+}
+
+fn next_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, Box<dyn Error>> {
+    if *index < tokens.len() {
+        let ret = *index;
+        *index += 1;
+        return Ok(&tokens[ret])
+    } else {
+        return Err(Box::from("expected a token, but got nothing"))
+    }
+}
+
+fn parse_program(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<dyn Error>> {
+    let mut generated_code = String::from("");
     loop {
-        let node = parse_function(&mut tokens);
-        match node {
-        CodeNode::Epsilon => {
-            if func_count == 0 {
-                let message = String::from("**Error. No input detected.");
-                return CodeNode::Error(message);
+        let code = parse_function(tokens, index)?;
+        if code.eq("") {
+            break;
+        }
+
+        generated_code += &code;
+    }
+
+    return Ok(generated_code);
+}
+
+fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<dyn Error>> {
+    
+    match next(tokens, index) {
+    None => {
+        return epsilon();
+    }
+    Some(token) => {
+        if !matches!(token, Token::Func(_,_)) {
+            return Err(Box::from("functions must begin with func"));
+        }
+    }
+
+    }
+
+    let func_ident = match next_error(tokens, index)? {
+    Token::Ident(_,_,func_ident) => func_ident,
+    _  => {return Err(Box::from("functions must have a function identifier"));}
+    };
+
+    if !matches!( next_error(tokens, index)?, Token::LeftParen(_,_) ) {
+        return Err(Box::from("expected '('"));
+    }
+
+    loop {
+       match next_error(tokens, index)? {
+
+       Token::RightParen(_,_) => {
+           break;
+       }
+
+       Token::Int(_,_) => {
+           match next_error(tokens, index)? {
+           Token::Ident(_,_,param) => {
+               println!("parameter {}", param);
+               match peek_error(tokens, *index)? {
+               Token::Comma(_,_) => {
+                   *index += 1;
+               }
+               Token::RightParen(_,_) => {}
+               _ => {
+                   return Err(Box::from("expected ',' or ')'"));
+               }
+
+               }
+           }
+           _ => {
+                return Err(Box::from("expected ident function parameter"));
+           }
+
+           }
+       }
+
+       _ => {
+           return Err(Box::from("expected 'int' keyword or ')' token"));
+       }
+
+       }
+    }
+
+    if !matches!(next_error(tokens, index)?, Token::LeftCurly(_,_)) {
+        return Err(Box::from("expected '{'"));
+    }
+
+    loop {
+        let code = parse_statement(tokens, index)?;
+        println!("{}", code);
+        if code.eq("") {
+            break;
+        }
+
+    }
+
+    if !matches!(next_error(tokens, index)?, Token::RightCurly(_,_)) {
+      return Err(Box::from("expected '}'"));
+    }
+
+    return Ok(format!("function {}\n", func_ident));
+}
+
+fn epsilon() -> Result<String, Box<dyn Error>> {
+    return Ok(String::from(""));
+}
+
+fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<dyn Error>> {
+    match peek(tokens, *index) {
+    None => {
+        return epsilon();
+    }
+
+    Some(token) => {
+        match token {
+
+        Token::RightCurly(_,_) => {
+            return epsilon();
+        }
+
+        Token::Int(_,_) => {
+            *index += 1;
+            match next_error(tokens, index)? {
+            Token::Ident(_,_,ident) => {
+                println!("declaration {}", ident);
             }
-            break;
+
+            _ => {
+                return Err(Box::from("expected identifier"));
+            }
+
+            }
         }
 
-        CodeNode::Error(_) => {
-            return node;
+        Token::Ident(_,_,_) => {
+            *index += 1;
+            if !matches!(next_error(tokens, index)?, Token::Assign(_,_)) {
+                return Err(Box::from("expected '=' assignment operator"));
+            }
+            _ = parse_expression(tokens, index)?;
         }
 
-        CodeNode::Code(code) => {
-            func_count += 1;
-            println!("{}", code);
+        Token::Return(_,_) => {
+            *index += 1;
+            _ = parse_expression(tokens, index)?;
+        }
+
+        Token::Print(_,_) => {
+            *index += 1;
+            if !matches!(next_error(tokens, index)?, Token::LeftParen(_,_)) {
+                return Err(Box::from("expect '(' closing statement"));
+            }
+
+            _ = parse_expression(tokens, index)?;
+
+            if !matches!(next_error(tokens, index)?, Token::RightParen(_,_)) {
+                return Err(Box::from("expect ')' closing statement"));
+            }
+        }
+
+        Token::Read(_,_) => {
+            *index += 1;
+            if !matches!(next_error(tokens, index)?, Token::LeftParen(_,_)) {
+                return Err(Box::from("expect '(' closing statement"));
+            }
+
+            _ = parse_expression(tokens, index)?;
+
+            if !matches!(next_error(tokens, index)?, Token::RightParen(_,_)) {
+                return Err(Box::from("expect ')' closing statement"));
+            }
+        }
+
+        _ => {
+             return Err(Box::from("invalid statement."));
         }
 
         }
+
+        if !matches!(next_error(tokens, index)?, Token::Semicolon(_,_)) {
+            return Err(Box::from("expect ';' closing statement"));
+        }
+
+        return Ok(String::from("statement"));
     }
 
-    return CodeNode::Code(String::from("code"));
+    }
 }
 
-fn parse_function(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) -> CodeNode {
-    // parse 'func' keyword.
-    let mut line: usize = 0;
-    let mut column: usize = 0;
-
-    match tokens.next() {
-    None => {
-      return CodeNode::Epsilon;
-    }
-
-    Some(tok) => {
-        if matches!(tok.token_type, TokenType::FunctionKeyword) == false {
-            line = tok.line;
-            column = tok.column;
-            let message = format!("**Error at line {}:{}: Functions must begin with the 'func' keyword.", line, column);
-            return CodeNode::Error(message);
-        }
-    }
-
-    };
-   
-    // parse 'ident' func.
-    let func_ident = match tokens.next() {
-    None => {
-        let message = format!("**Error at line {}:{}: expected function identifier.", line, column);
-        return CodeNode::Error(message);
-    }
-
-    Some(tok) => {
-        match tok.token_type {
-        TokenType::Identifier(ident) => {
-            line = tok.line;
-            column = tok.column;
-            ident
-        }
-
-        _ => {
-             line = tok.line;
-             column = tok.column;
-             let message = format!("**Error at line {}:{}. expected function identifier.", line, column);
-             return CodeNode::Error(message);
-        }
-
-        }
-    }
-
-    };
-    
-    // todo!();
-    
-    match tokens.next() {
-    None => {
-        let message = format!("**Error at line {}:{}. expected left parenthesis.", line, column);
-        return CodeNode::Error(message);
-    }
-
-    Some(tok) => {
-        match tok.token_type {
-        TokenType::LeftParenthesis => {
-            line = tok.line;
-            column = tok.column;
-        }
-
-        _ => {
-             let message = format!("**Error at line {}:{}. expected left parenthesis.", tok.line, tok.column);
-             return CodeNode::Error(message);
-        }
-
-        }
-    }
-
-    }
-
-    // TODO: put function parameters
-    match tokens.next() {
-    None => {
-        let message = format!("**Error at line {}:{}. expected right parenthesis.", line, column);
-        return CodeNode::Error(message);
-    }
-
-    Some(tok) => {
-        match tok.token_type {
-        TokenType::RightParenthesis => {
-            line = tok.line;
-            column = tok.column;
-        }
-
-        _ => {
-             let message = format!("**Error at line {}:{}. expected right parenthesis.", tok.line, tok.column);
-             return CodeNode::Error(message);
-        }
-
-        }
-    }
-
-    }
-
-    match tokens.next() {
-    None => {
-        let message = format!("**Error at line {}:{}. expected left curly brace.", line, column);
-        return CodeNode::Error(message);
-    }
-
-    Some(tok) => {
-        match tok.token_type {
-        TokenType::LeftCurlyBrace => {
-            line = tok.line;
-            column = tok.column;
-        }
-
-        _ => {
-             let message = format!("**Error at line {}:{}. expected left curly brace.", tok.line, tok.column);
-             return CodeNode::Error(message);
-        }
-
-        }
-    }
-
-    }
-
+fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<dyn Error>> {
+    let mut code = parse_multiply_expression(tokens, index)?;
     loop {
-        let node = parse_statement(&mut tokens);
-        match node {
-        CodeNode::Epsilon => {
-            break;
-        }
+       match peek_error(tokens, *index)? {
+       Token::Plus(_,_) => {
+           *index += 1;
+           _ = parse_multiply_expression(tokens, index)?;
+           code += "c = (add c b)\n";
+       }
 
-        CodeNode::Error(ident) => {
-            return CodeNode::Error(ident);
-        }
+       Token::Subtract(_,_) => {
+           *index += 1;
+           _ = parse_multiply_expression(tokens, index)?;
+           code += "c = (sub c b)\n";
+       }
 
-        CodeNode::Code(_) => {
+       _ => {
+           break;
+       }
 
-        }
-
-        }
+       }
     }
 
-    match tokens.next() {
-    None => {
-        let message = format!("**Error at line {}:{}. expected right curly brace.", line, column);
-        return CodeNode::Error(message);
-    }
-
-    Some(tok) => {
-        match tok.token_type {
-        TokenType::RightCurlyBrace => {
-             return CodeNode::Code(format!("func {}", func_ident));
-        }
-
-        _ => {
-             line = tok.line;
-             column = tok.column;
-             let message = format!("**Error at line {}:{}. expected right curly brace.", line, column);
-             return CodeNode::Error(message);
-        }
-
-        }
-    }
-
-    }
+    return Ok(code);
 }
 
 
-fn parse_statement(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>>) -> CodeNode {
-    let tok = match tokens.peek() {
-    None => {
-        return CodeNode::Epsilon;
-    }
-    Some(tok) => {
-        tok
-    }
+fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<dyn Error>> {
+    let mut code = parse_term(tokens, index)?;
+    loop {
+       match peek_error(tokens, *index)? {
+       Token::Multiply(_,_) => {
+           *index += 1;
+           _ = parse_term(tokens, index)?;
+           code += "c = (mult c b)\n";
+       }
 
-    };
+       Token::Divide(_,_) => {
+           *index += 1;
+           _ = parse_term(tokens, index)?;
+           code += "c = (divide c b)\n";
+       }
 
-    match tok.token_type {
+       _ => {
+           break;
+       }
 
-    TokenType::RightCurlyBrace => {
-         return CodeNode::Epsilon;
-    }
-
-    TokenType::IntKeyword => {
-         // declaration.
-         tokens.next();
-         parse_declaration(&mut tokens);
-    }
-
-    TokenType::PrintKeyword => {
-         // do print parsing.
+       }
     }
 
-    TokenType::InputKeyword => {
-         // do input keyword.
+    return Ok(code);
+}
+
+fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<dyn Error>> {
+    match next_error(tokens, index) ? {
+
+    Token::Ident(_,_,ident) => {
+        match peek_error(tokens, *index)? {
+        Token::LeftParen(_,_) => {
+            *index += 1;
+            loop {
+               match peek_error(tokens, *index)? {
+  
+               Token::RightParen(_,_) => {
+                   *index += 1;
+                   break;
+               }
+
+               _ => {
+                   let _code = parse_expression(tokens, index)?;
+                   match peek_error(tokens, *index)? {
+                   Token::Comma(_,_) => {
+                       *index += 1;
+                   }
+                   Token::RightParen(_,_) => {}
+                   _ => {
+                       return Err(Box::from("expected ',' or ')'"));
+                   }
+
+                   }
+               }
+  
+               }
+            }
+
+            return Ok(String::from("a"));
+        }
+
+        _ => {
+            return Ok(ident.clone());
+        }
+
+        }
     }
 
-    TokenType::Identifier(_) => {
-         // expression.
-         tokens.next();
+    Token::Num(_,_,num) => {
+        return Ok(format!("{}", num));
+    }
 
-         match tokens.next() {
+    Token::LeftParen(_,_) => {
+        let _code = parse_expression(tokens, index)?;
+        if !matches!(next_error(tokens, index)?, Token::RightParen(_,_)) {
+            return Err(Box::from("expected ')' parenthesis"));
+        }
 
-         None => {
-             let message = format!("**Error. Invalid expression statement.");
-             return CodeNode::Error(message);
-         }
-
-         Some(tok) => {
-             if matches!(tok.token_type, TokenType::Assign) == false {
-                 let line = tok.line;
-                 let column = tok.column;
-                 let message = format!("**Error at line {}:{}. Expected assignment '=' statement.", line, column);
-                 return CodeNode::Error(message);
-             }
-         }
-
-         }
-
-         parse_expression(&mut tokens);
-
+        return Ok(String::from("term"));
     }
 
     _ => {
-         let line = tok.line;
-         let column = tok.column;
-         let message = format!("**Error at line {}:{}. Invalid statement.", line, column);
-         return CodeNode::Error(message);
-    }
-
-    }
-
-    match tokens.next() {
-    None => {
-        let code: String = String::from("");
-        return CodeNode::Code(code);
-    }
-
-    Some(tok) => {
-        match tok.token_type {
-
-        TokenType::Semicolon => {
-             let code: String = String::from("");
-             return CodeNode::Code(code);
-        }
- 
-        _ => {
-             let line = tok.line;
-             let column = tok.column;
-             let message = format!("**Error at line {}:{}. Statements must end with a semicolon.", line, column);
-             return CodeNode::Error(message);
-        }
-
-        }
-    }
-
-    }  
-}
-
-fn parse_declaration(tokens: &mut Peekable<std::vec::IntoIter<LexerToken>> ) -> CodeNode {
-    match tokens.next() {
-    None => {
-        let message = format!("**Error. Invalid statement.");
-        return CodeNode::Error(message);
-    }
-
-    Some(tok) => {
-        match &tok.token_type {
-       
-        TokenType::Identifier(ident) => {
-             // expression.
-             return CodeNode::Code(ident.to_string());
-        }
-       
-        _ => {
-             let line = tok.line;
-             let column = tok.column;
-             let message = format!("**Error at line {}:{}. Invalid declaration statement. Expected identifier", line, column);
-             return CodeNode::Error(message);
-        }
-
-        }
+        return Err(Box::from("invalid expression"));
     }
 
     }
 }
 
-fn parse_expression(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>> ) -> CodeNode {
-    parse_multiply_expression(&mut tokens);
-    loop {
-        match tokens.peek() {
-        None => {
-            return CodeNode::Code(String::from(""));
-        }
-        Some(tok) => {
-            match tok.token_type {
-            TokenType::Plus => {
-                tokens.next();
-                parse_multiply_expression(&mut tokens);
-            }
 
-            TokenType::Subtract => {
-                tokens.next();
-                parse_multiply_expression(&mut tokens);
-            }
-
-            _ => {
-                 break;
-           
-            }
-
-            }
-        }
-
-        }
-    }
-    return CodeNode::Code(String::from(""));
-}
-
-fn parse_multiply_expression(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>> ) -> CodeNode {
-    parse_term(&mut tokens);
-    loop {
-        match tokens.peek() {
-        None => {
-            return CodeNode::Code(String::from(""));
-        }
-        Some(tok) => {
-            match tok.token_type {
-            TokenType::Multiply => {
-                tokens.next();
-                parse_term(&mut tokens);
-            }
-
-            TokenType::Divide => {
-                tokens.next();
-                parse_term(&mut tokens);
-            }
-
-            _ => {
-                 break;
-            }
-
-            }
-        }
-
-        }
-    }
-    return CodeNode::Code(String::from(""));
-}
-
-fn parse_term(mut tokens: &mut Peekable<std::vec::IntoIter<LexerToken>> ) -> CodeNode {
-    // return CodeNode::Code(String::from(""));
-    match tokens.next() {
-    None => {
-        return CodeNode::Error(String::from(""));
-    }
-    Some(tok) => {
-        match tok.token_type {
-        TokenType::Identifier(_) => {
-            return CodeNode::Code(String::from(""));
-
-        }
-
-        TokenType::Number(_) => {
-            return CodeNode::Code(String::from(""));
-        }
-
-        TokenType::LeftParenthesis => {
-            parse_expression(&mut tokens);
-
-            match tokens.next() {
-            None => {
-                return CodeNode::Error(String::from(""));
-            }
-
-            Some(tok) => {
-                if matches!(tok.token_type, TokenType::RightParenthesis) == false {
-                     return CodeNode::Error(String::from(""));
-                }
-
-                return CodeNode::Error(String::from(""));
-            }
-
-            }
-        }
-
-        _ => {
-            return CodeNode::Error(String::from(""));
-        }
-
-        }
-    }
-
-    }
-}
 
 
 

@@ -1,0 +1,21 @@
+func add(int a, int b) {
+    int c;
+    c = a + b;
+    return c;
+}
+
+func sub(int a, int b) {
+    int c;
+    c = a + b;
+    return c;
+}
+
+func mult(int a, int b) {
+    int c;
+    c = a * b;
+    return c;
+}
+
+func main() {
+    int a = add(1, 2);
+}
