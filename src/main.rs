@@ -279,6 +279,18 @@ fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
         }
     }
 
+    match state_machine {
+    StateMachine::Number => {
+        let number = create_number(token_start, token_end, code);
+        tokens.push(Token::Num(line_num, (token_start + 1) as i32, number));
+    }
+    StateMachine::Ident => {
+        let ident = create_identifier(line_num, (token_start + 1) as i32, token_start, token_end, code);
+        tokens.push(ident);
+    }
+    _ => {}
+    }
+
     return Ok(tokens);
 
     // helper functions
@@ -650,7 +662,78 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<dyn 
 }
 
 
+#[cfg(test)]
+mod tests {
+    use crate::Token;
+    use crate::lex;
 
+    #[test]
+    fn lexer_test() {
+        // valid numbers
+        let mut tokens = lex("1 + 2 + 3 * 44");
+        match tokens {
+        Err(_)=> {assert!(false);}
+        Ok(tok) => {
+            assert!(tok.len() == 7);
+            assert!(matches!(tok[0], Token::Num(_,_,1)));
+            assert!(matches!(tok[1], Token::Plus(_,_)));
+            assert!(matches!(tok[2], Token::Num(_,_,2)));
+            assert!(matches!(tok[3], Token::Plus(_,_)));
+            assert!(matches!(tok[4], Token::Num(_,_,3)));
+            assert!(matches!(tok[5], Token::Multiply(_,_)));
+            assert!(matches!(tok[6], Token::Num(_,_,44)));
+        }
+
+        }
+
+        // valid numbers
+        tokens = lex("1 / 2 - 3");
+        match tokens {
+        Err(_)=> {assert!(false);}
+        Ok(tok) => {
+            assert!(tok.len() == 5);
+            assert!(matches!(tok[0], Token::Num(_,_,1)));
+            assert!(matches!(tok[1], Token::Divide(_,_)));
+            assert!(matches!(tok[2], Token::Num(_,_,2)));
+            assert!(matches!(tok[3], Token::Subtract(_,_)));
+            assert!(matches!(tok[4], Token::Num(_,_,3)));
+        }
+
+        }
+
+        // valid identifiers 
+        tokens = lex("box333 c3a3r dog cat");
+        match tokens {
+        Err(_)=> {assert!(false);}
+        Ok(tok) => {
+            assert!(tok.len() == 4);
+            assert!(is_name(&tok[0], "box333"));
+            assert!(is_name(&tok[1], "c3a3r"));
+            assert!(is_name(&tok[2], "dog"));
+            assert!(is_name(&tok[3], "cat"));
+            fn is_name(t: &Token, name: &str) -> bool {
+                match t {
+                Token::Ident(_,_,id) => {return id.eq(name);}
+                _ => {return false;}
+                }
+            }
+        }
+        }
+
+        // '31st' is an invalid number
+        tokens = lex("October 31st, 1517");
+        match tokens {
+
+        Err(_) => {}
+
+        Ok(_) => {assert!(false);}
+
+        }
+
+    }
+
+
+}
 
 
 
