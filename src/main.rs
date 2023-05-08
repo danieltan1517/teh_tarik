@@ -134,9 +134,6 @@ fn main() {
         }
         println!("----------------------");
     }
-
-
-
 }
 
 #[derive(Debug)]
@@ -469,6 +466,10 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box
             match next_error(tokens, index)? {
             Token::Ident(_,_,ident) => {
                 println!("declaration {}", ident);
+                if matches!(peek_error(tokens, *index)?, Token::Assign(_,_)) {
+                    *index += 1;
+                    _ = parse_expression(tokens, index);
+                }
             }
 
             _ => {
