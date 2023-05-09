@@ -109,8 +109,7 @@ enum Token {
 }
 
 enum CodeNode {
-  Function(String),
-  Statement(String),
+  Code(String),
   Epsilon,
 }
 
@@ -340,10 +339,9 @@ fn parse_program(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<d
         CodeNode::Epsilon => {
             break;
         }
-        CodeNode::Function(func_code) => {
+        CodeNode::Code(func_code) => {
             generated_code += &func_code;
         }
-        _ => {}
         }
     }
 
@@ -427,10 +425,9 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Bo
         CodeNode::Epsilon => {
             break;
         }
-        CodeNode::Statement(statement) => {
+        CodeNode::Code(statement) => {
             code += &statement;
         }
-        _ => {}
         }
     }
 
@@ -440,7 +437,7 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Bo
       return Err(Box::from("expected '}'"));
     }
 
-    return Ok(CodeNode::Function(code));
+    return Ok(CodeNode::Code(code));
 }
 
 fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Box<dyn Error>> {
@@ -473,12 +470,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
                     break;
                 }
 
-                CodeNode::Statement(statement) => statement,
-
-                CodeNode::Function(_) => {
-                    panic!("function statement called for no reason.");
-                }
-
+                CodeNode::Code(statement) => statement,
                 };
 
                 code += &statement;
@@ -492,7 +484,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
             code = format!("{}:= loopbegin\n", code);
             code = format!("{}: endloop\n", code);
 
-            codenode = CodeNode::Statement(code);
+            codenode = CodeNode::Code(code);
             return Ok(codenode);
         }
 
@@ -510,11 +502,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
                     break;
                 }
 
-                CodeNode::Statement(statement) => statement,
-
-                CodeNode::Function(_) => {
-                    panic!("function statement called for no reason.");
-                }
+                CodeNode::Code(statement) => statement,
 
                 };
 
@@ -538,11 +526,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
                         break;
                     }
                  
-                    CodeNode::Statement(statement) => statement,
-                 
-                    CodeNode::Function(_) => {
-                        panic!("function statement called for no reason.");
-                    }
+                    CodeNode::Code(statement) => statement,
                  
                     };
                     elsebody += &statement;
@@ -559,7 +543,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
                 code = format!("{code}: else\n");
                 code = format!("{code}{elsebody}");
                 code = format!("{code}: endif\n");
-                return Ok(CodeNode::Statement(code));
+                return Ok(CodeNode::Code(code));
 
             } else {
                 let mut code = format!("{}", expression.code);
@@ -568,7 +552,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
                 code = format!("{code}: iftrue\n");
                 code = format!("{code}{ifbody}");
                 code = format!("{code}: endif\n");
-                return Ok(CodeNode::Statement(code));
+                return Ok(CodeNode::Code(code));
             }
             
         }
@@ -581,10 +565,10 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
                     *index += 1;
                     let expr = parse_expression(tokens, index)?;
                     let code = format!("{}. {}\n= {}, {}\n", expr.code, ident, ident, expr.name);
-                    codenode = CodeNode::Statement(code);
+                    codenode = CodeNode::Code(code);
                 } else {
                     let statement = format!(". {}\n", ident);
-                    codenode = CodeNode::Statement(statement);
+                    codenode = CodeNode::Code(statement);
                 }
             }
 
@@ -602,14 +586,14 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
             }
             let expr = parse_expression(tokens, index)?;
             let code = format!("{}= {}, {}\n", expr.code, ident, expr.name);
-            codenode = CodeNode::Statement(code);
+            codenode = CodeNode::Code(code);
         }
 
         Token::Return => {
             *index += 1;
             let expr = parse_expression(tokens, index)?;
             let code = format!("{}ret {}\n", expr.code, expr.name);
-            codenode = CodeNode::Statement(code);
+            codenode = CodeNode::Code(code);
         }
 
         Token::Print => {
@@ -623,7 +607,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
             if !matches!(next_error(tokens, index)?, Token::RightParen) {
                 return Err(Box::from("expect ')' closing statement"));
             }
-            codenode = CodeNode::Statement(code);
+            codenode = CodeNode::Code(code);
         }
 
         Token::Read => {
@@ -638,17 +622,17 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
             if !matches!(next_error(tokens, index)?, Token::RightParen) {
                 return Err(Box::from("expect ')' closing statement"));
             }
-            codenode = CodeNode::Statement(code);
+            codenode = CodeNode::Code(code);
         }
 
         Token::Break => {
             *index += 1;
-            codenode = CodeNode::Statement(String::from("break"));
+            codenode = CodeNode::Code(String::from("break"));
         }
 
         Token::Continue => {
             *index += 1;
-            codenode = CodeNode::Statement(String::from("continue"));
+            codenode = CodeNode::Code(String::from("continue"));
         }
 
         _ => {
