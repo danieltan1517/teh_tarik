@@ -58,103 +58,16 @@ fn main() {
         } else if index >= tokens.len() {
             index = tokens.len() - 1;
             let loc = &location[index];
-            let tok = &tokens[index];
-            print_error(loc.line, loc.col, tok, &message);
+            println!("Error at line {}:{}. {}", loc.line, loc.col, message);
+            println!("----------------------");
         } else {
             index -= 1;
             let loc = &location[index];
-            let tok = &tokens[index];
-            print_error(loc.line, loc.col, tok, &message);
+            println!("Error at line {}:{}. {}", loc.line, loc.col, message);
+            println!("----------------------");
         }
-
     }
 
-    }
-
-    fn print_error<T: std::fmt::Display>(line: i32, col: i32, tok: &Token, message: T) {
-        match tok {
-        Token::Func => {
-            println!("Error at line {}:{}. {}", line, col, message);
-        }
-        Token::Return => {
-            println!("Error at line {}:{}. unexpected 'return' keyword. {}", line, col, message);
-        }
-        Token::Int => {
-            println!("Error at line {}:{}. unexpected 'int' keyword. {}", line, col, message);
-        }
-        Token::Print => {
-            println!("Error at line {}:{}. unexpected 'print' keyword. {}", line, col, message);
-        }
-        Token::Read => {
-            println!("Error at line {}:{}. unexpected 'read' keyword. {}", line, col, message);
-        }
-        Token::While => {
-            println!("Error at line {}:{}. unexpected 'while' keyword. {}", line, col, message);
-        }
-        Token::If => {
-            println!("Error at line {}:{}. unexpected 'if' keyword. {}", line, col, message);
-        }
-        Token::Else => {
-            println!("Error at line {}:{}. unexpected 'else' keyword. {}", line, col, message);
-        }
-        Token::LeftParen => {
-            println!("Error at line {}:{}. unexpected '('. {}", line, col, message);
-        }
-        Token::RightParen => {
-            println!("Error at line {}:{}. unexpected ')'. {}", line, col, message);
-        }
-        Token::LeftCurly => {
-            println!("Error at line {}:{}. unexpected '{{'. {}", line, col, message);
-        }
-        Token::RightCurly => {
-            println!("Error at line {}:{}. unexpected '}}'. {}", line, col, message);
-        }
-        Token::Comma => {
-            println!("Error at line {}:{}. unexpected ','. {}", line, col, message);
-        }
-        Token::Semicolon => {
-            println!("Error at line {}:{}. unexpected ';'. {}", line, col, message);
-        }
-        Token::Break => {
-            println!("Error at line {}:{}. unexpected 'break' statement. {}", line, col, message);
-        }
-        Token::Continue => {
-            println!("Error at line {}:{}. unexpected 'continue' statement. {}", line, col, message);
-        }
-        Token::Plus => {
-            println!("Error at line {}:{}. unexpected '+'. {}", line, col, message);
-        }
-        Token::Subtract => {
-            println!("Error at line {}:{}. unexpected '-'. {}", line, col, message);
-        }
-        Token::Multiply => {
-            println!("Error at line {}:{}. unexpected '*'. {}", line, col, message);
-        }
-        Token::Divide => {
-            println!("Error at line {}:{}. unexpected '/'. {}", line, col, message);
-        }
-        Token::Modulus => {
-            println!("Error at line {}:{}. unexpected '%'. {}", line, col, message);
-        }
-        Token::Assign => {
-            println!("Error at line {}:{}. unexpected '='. {}", line, col, message);
-        }
-        Token::Less => {
-            println!("Error at line {}:{}. unexpected '<'. {}", line, col, message);
-        }
-        Token::Greater => {
-            println!("Error at line {}:{}. unexpected '>'. {}", line, col, message);
-        }
-        Token::Ident(ident) => {
-            println!("Error at line {}:{}. invalid identifier {}. {}", line, col, ident, message);
-        }
-        Token::Num(num) => {
-            println!("Error at line {}:{}. invalid identifier {}. {}", line, col, num, message);
-        }
-
-
-        }
-        println!("----------------------");
     }
 }
 
@@ -537,7 +450,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
     }
 
     Some(token) => {
-        let mut codenode = CodeNode::Epsilon;
+        let codenode: CodeNode;
         match token {
 
         Token::RightCurly => {
@@ -664,7 +577,6 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
             *index += 1;
             match next_error(tokens, index)? {
             Token::Ident(ident) => {
-                // println!("declaration {}", ident);
                 if matches!(peek_error(tokens, *index)?, Token::Assign) {
                     *index += 1;
                     let expr = parse_expression(tokens, index)?;
