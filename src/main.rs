@@ -61,6 +61,7 @@ fn main() {
             let tok = &tokens[index];
             print_error(loc.line, loc.col, tok, &message);
         } else {
+            index -= 1;
             let loc = &location[index];
             let tok = &tokens[index];
             print_error(loc.line, loc.col, tok, &message);
