@@ -818,6 +818,22 @@ mod tests {
 
         }
 
+        // valid numbers
+        tokens = lex("1 > 2 + < 100");
+        match tokens {
+        Err(_)=> {assert!(false);}
+        Ok((tok,_)) => {
+            assert!(tok.len() == 6);
+            assert!(matches!(tok[0], Token::Num(1)));
+            assert!(matches!(tok[1], Token::Greater));
+            assert!(matches!(tok[2], Token::Num(2)));
+            assert!(matches!(tok[3], Token::Plus));
+            assert!(matches!(tok[4], Token::Less));
+            assert!(matches!(tok[5], Token::Num(100)));
+        }
+
+        }
+
         // valid identifiers 
         tokens = lex("box333 c3a3r dog cat");
         match tokens {
