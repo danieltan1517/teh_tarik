@@ -87,7 +87,15 @@ fn main() {
         Token::Read => {
             println!("Error at line {}:{}. unexpected 'read' keyword. {}", line, col, message);
         }
-
+        Token::While => {
+            println!("Error at line {}:{}. unexpected 'while' keyword. {}", line, col, message);
+        }
+        Token::If => {
+            println!("Error at line {}:{}. unexpected 'if' keyword. {}", line, col, message);
+        }
+        Token::Else => {
+            println!("Error at line {}:{}. unexpected 'else' keyword. {}", line, col, message);
+        }
         Token::LeftParen => {
             println!("Error at line {}:{}. unexpected '('. {}", line, col, message);
         }
@@ -106,7 +114,12 @@ fn main() {
         Token::Semicolon => {
             println!("Error at line {}:{}. unexpected ';'. {}", line, col, message);
         }
-
+        Token::Break => {
+            println!("Error at line {}:{}. unexpected 'break' statement. {}", line, col, message);
+        }
+        Token::Continue => {
+            println!("Error at line {}:{}. unexpected 'continue' statement. {}", line, col, message);
+        }
         Token::Plus => {
             println!("Error at line {}:{}. unexpected '+'. {}", line, col, message);
         }
@@ -125,13 +138,19 @@ fn main() {
         Token::Assign => {
             println!("Error at line {}:{}. unexpected '='. {}", line, col, message);
         }
-
+        Token::Less => {
+            println!("Error at line {}:{}. unexpected '<'. {}", line, col, message);
+        }
+        Token::Greater => {
+            println!("Error at line {}:{}. unexpected '>'. {}", line, col, message);
+        }
         Token::Ident(ident) => {
             println!("Error at line {}:{}. invalid identifier {}. {}", line, col, ident, message);
         }
         Token::Num(num) => {
             println!("Error at line {}:{}. invalid identifier {}. {}", line, col, num, message);
         }
+
 
         }
         println!("----------------------");
@@ -146,6 +165,11 @@ enum Token {
   Int,
   Print,
   Read,
+  While,
+  If,
+  Else,
+  Break,
+  Continue,
 
   LeftParen,
   RightParen,
@@ -163,11 +187,8 @@ enum Token {
   Assign,
 
   // comparison operators
-  /*Less,
-  LessEqual,
-  Equal,
+  Less,
   Greater,
-  GreaterEqual,*/
 
   Ident(String),
   Num(i32),
@@ -249,6 +270,8 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
              ')' => add(&mut tokens, &mut locations, Token::RightParen, line_num, col_num),
              ';' => add(&mut tokens, &mut locations, Token::Semicolon, line_num, col_num),
              '=' => add(&mut tokens, &mut locations, Token::Assign, line_num, col_num),
+             '<' => add(&mut tokens, &mut locations, Token::Less, line_num, col_num),
+             '>' => add(&mut tokens, &mut locations, Token::Greater, line_num, col_num),
               _  => {
                  if !character.is_whitespace() {
                      let ident = &code[token_start..token_end];
@@ -305,7 +328,12 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
         "int" => Token::Int,
         "print" => Token::Print,
         "read" => Token::Read,
-        _ => Token::Ident(String::from(token))
+        "while" => Token::While,
+        "if" => Token::If,
+        "else" => Token::Else,
+        "break" => Token::Break,
+        "continue" => Token::Continue,
+        _ => Token::Ident(String::from(token)),
         }
     }
 
@@ -454,7 +482,6 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<
         if code.eq("") {
             break;
         }
-
     }
 
     if !matches!(next_error(tokens, index)?, Token::RightCurly) {
@@ -479,6 +506,66 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box
 
         Token::RightCurly => {
             return epsilon();
+        }
+
+        Token::While => {
+            *index += 1;
+            _ = parse_boolean(tokens, index)?;
+            if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
+                return Err(Box::from("expected '{'"));
+            }
+            loop {
+                let code = parse_statement(tokens, index)?;
+                println!("{}", code);
+                if code.eq("") {
+                    break;
+                }
+            }
+            if !matches!(next_error(tokens, index)?, Token::RightCurly) {
+                return Err(Box::from("expected '}'"));
+            }
+            return Ok(String::from("statement"));
+        }
+
+        Token::If => {
+            *index += 1;
+            _ = parse_boolean(tokens, index)?;
+            if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
+                return Err(Box::from("expected '{'"));
+            }
+            loop {
+                let code = parse_statement(tokens, index)?;
+                println!("{}", code);
+                if code.eq("") {
+                    break;
+                }
+            }
+            if !matches!(next_error(tokens, index)?, Token::RightCurly) {
+                return Err(Box::from("expected '}'"));
+            }
+
+            if matches!(peek_error(tokens, *index)?, Token::Else) {
+                *index += 1;
+
+                if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
+                    return Err(Box::from("expected '{'"));
+                }
+                loop {
+                    let code = parse_statement(tokens, index)?;
+                    println!("{}", code);
+                    if code.eq("") {
+                        break;
+                    }
+                }
+                if !matches!(next_error(tokens, index)?, Token::RightCurly) {
+                    return Err(Box::from("expected '}'"));
+                }
+
+                return Err(Box::from("expected 'else'"));
+            }
+
+
+            return Ok(String::from("statement"));
         }
 
         Token::Int => {
@@ -536,6 +623,14 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box
             if !matches!(next_error(tokens, index)?, Token::RightParen) {
                 return Err(Box::from("expect ')' closing statement"));
             }
+        }
+
+        Token::Break => {
+            *index += 1;
+        }
+
+        Token::Continue => {
+            *index += 1;
         }
 
         _ => {
@@ -607,8 +702,21 @@ fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<S
     return Ok(code);
 }
 
+fn parse_boolean(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<dyn Error>> {
+    _ = parse_term(tokens, index)?;
+    match next_error(tokens, index)? {
+    Token::Less => {}
+    Token::Greater => {}
+    _ => {
+        return Err(Box::from("invalid boolean expression. expected '<' or '>' comparison operator."));
+    }
+    }
+    _ = parse_term(tokens, index)?;
+    return Ok(String::from("boolean expression"));
+}
+
 fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<dyn Error>> {
-    match next_error(tokens, index) ? {
+    match next_error(tokens, index)? {
 
     Token::Ident(ident) => {
         match peek_error(tokens, *index)? {
