@@ -236,7 +236,6 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
         match state_machine {
 
         StateMachine::Init => {
-             // token_start = token_end;
              match character {
              '+' => add(&mut tokens, &mut locations, Token::Plus, line_num, col_num),
              '-' => add(&mut tokens, &mut locations, Token::Subtract, line_num, col_num),
@@ -261,13 +260,9 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
              }
         }
 
-        StateMachine::Number => {
+        StateMachine::Number => {}
 
-        }
-
-        StateMachine::Ident => {
-
-        }
+        StateMachine::Ident => {}
 
         StateMachine::ErrorNum => {
             if character == ' ' {
