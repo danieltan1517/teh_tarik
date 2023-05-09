@@ -1,0 +1,9 @@
+func main() {
+  int a = 100;
+  if a < 10 {
+    print(a);
+  } else {
+    print(100);
+  }
+
+}
