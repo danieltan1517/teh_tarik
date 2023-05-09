@@ -30,7 +30,7 @@ fn main() {
 
     };
 
-    let tokens = match lex(&code) {
+    let (tokens, location) = match lex(&code) {
     Err(error_message) => {
         println!("**Error**");
         println!("----------------------");
@@ -57,77 +57,79 @@ fn main() {
             println!("No code has been provided.");
         } else if index >= tokens.len() {
             index = tokens.len() - 1;
+            let loc = &location[index];
             let tok = &tokens[index];
-            print_error(tok, &message);
+            print_error(loc.line, loc.col, tok, &message);
         } else {
+            let loc = &location[index];
             let tok = &tokens[index];
-            print_error(tok, &message);
+            print_error(loc.line, loc.col, tok, &message);
         }
 
     }
 
     }
 
-    fn print_error<T: std::fmt::Display>(tok: &Token, message: T) {
+    fn print_error<T: std::fmt::Display>(line: i32, col: i32, tok: &Token, message: T) {
         match tok {
-        Token::Func(line, col) => {
+        Token::Func => {
             println!("Error at line {}:{}. {}", line, col, message);
         }
-        Token::Return(line, col) => {
+        Token::Return => {
             println!("Error at line {}:{}. unexpected 'return' keyword. {}", line, col, message);
         }
-        Token::Int(line, col) => {
+        Token::Int => {
             println!("Error at line {}:{}. unexpected 'int' keyword. {}", line, col, message);
         }
-        Token::Print(line, col) => {
+        Token::Print => {
             println!("Error at line {}:{}. unexpected 'print' keyword. {}", line, col, message);
         }
-        Token::Read(line, col) => {
+        Token::Read => {
             println!("Error at line {}:{}. unexpected 'read' keyword. {}", line, col, message);
         }
 
-        Token::LeftParen(line, col) => {
+        Token::LeftParen => {
             println!("Error at line {}:{}. unexpected '('. {}", line, col, message);
         }
-        Token::RightParen(line, col) => {
+        Token::RightParen => {
             println!("Error at line {}:{}. unexpected ')'. {}", line, col, message);
         }
-        Token::LeftCurly(line, col) => {
+        Token::LeftCurly => {
             println!("Error at line {}:{}. unexpected '{{'. {}", line, col, message);
         }
-        Token::RightCurly(line, col) => {
+        Token::RightCurly => {
             println!("Error at line {}:{}. unexpected '}}'. {}", line, col, message);
         }
-        Token::Comma(line, col) => {
+        Token::Comma => {
             println!("Error at line {}:{}. unexpected ','. {}", line, col, message);
         }
-        Token::Semicolon(line, col) => {
+        Token::Semicolon => {
             println!("Error at line {}:{}. unexpected ';'. {}", line, col, message);
         }
 
-        Token::Plus(line, col) => {
+        Token::Plus => {
             println!("Error at line {}:{}. unexpected '+'. {}", line, col, message);
         }
-        Token::Subtract(line, col) => {
+        Token::Subtract => {
             println!("Error at line {}:{}. unexpected '-'. {}", line, col, message);
         }
-        Token::Multiply(line, col) => {
+        Token::Multiply => {
             println!("Error at line {}:{}. unexpected '*'. {}", line, col, message);
         }
-        Token::Divide(line, col) => {
+        Token::Divide => {
             println!("Error at line {}:{}. unexpected '/'. {}", line, col, message);
         }
-        Token::Modulus(line, col) => {
+        Token::Modulus => {
             println!("Error at line {}:{}. unexpected '%'. {}", line, col, message);
         }
-        Token::Assign(line, col) => {
+        Token::Assign => {
             println!("Error at line {}:{}. unexpected '='. {}", line, col, message);
         }
 
-        Token::Ident(line, col, ident) => {
+        Token::Ident(ident) => {
             println!("Error at line {}:{}. invalid identifier {}. {}", line, col, ident, message);
         }
-        Token::Num(line, col, num) => {
+        Token::Num(num) => {
             println!("Error at line {}:{}. invalid identifier {}. {}", line, col, num, message);
         }
 
@@ -139,26 +141,26 @@ fn main() {
 #[derive(Debug)]
 enum Token {
   // keywords:
-  Func(i32, i32),
-  Return(i32, i32),
-  Int(i32, i32),
-  Print(i32, i32),
-  Read(i32, i32),
+  Func,
+  Return,
+  Int,
+  Print,
+  Read,
 
-  LeftParen(i32, i32),
-  RightParen(i32, i32),
-  LeftCurly(i32, i32),
-  RightCurly(i32, i32),
-  Comma(i32, i32),
-  Semicolon(i32, i32),
+  LeftParen,
+  RightParen,
+  LeftCurly,
+  RightCurly,
+  Comma,
+  Semicolon,
 
   // mathematical operators.
-  Plus(i32, i32),
-  Subtract(i32, i32),
-  Multiply(i32, i32),
-  Divide(i32, i32),
-  Modulus(i32, i32),
-  Assign(i32, i32), // =
+  Plus,
+  Subtract,
+  Multiply,
+  Divide,
+  Modulus,
+  Assign,
 
   // comparison operators
   /*Less,
@@ -167,12 +169,18 @@ enum Token {
   Greater,
   GreaterEqual,*/
 
-  Ident(i32, i32, String),
-  Num(i32, i32, i32),
+  Ident(String),
+  Num(i32),
 }
 
-fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
+struct Loc {
+  line: i32,
+  col:  i32,
+}
+
+fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
     let mut tokens: Vec<Token> = vec![];
+    let mut locations: Vec<Loc> = vec![];
     let mut token_start: usize = 0;
     let mut token_end:   usize = 0;
     let mut line_num:    i32   = 1;
@@ -202,7 +210,7 @@ fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
                 StateMachine::ErrorNum
             } else {
                 let number = create_number(token_start, token_end, code);
-                tokens.push(Token::Num(line_num, (token_start + 1) as i32, number));
+                add(&mut tokens, &mut locations, Token::Num(number), line_num, col_num);
                 StateMachine::Init
             }
         }
@@ -211,8 +219,8 @@ fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
             if character.is_alphabetic() || (character >= '0' && character <= '9') || character == '_' {
                 StateMachine::Ident
             } else {
-                let ident = create_identifier(line_num, (token_start + 1) as i32, token_start, token_end, code);
-                tokens.push(ident);
+                let ident = create_identifier(token_start, token_end, code);
+                add(&mut tokens, &mut locations, ident, line_num, col_num);
                 token_start = token_end;
                 StateMachine::Init
             }
@@ -230,18 +238,18 @@ fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
         StateMachine::Init => {
              // token_start = token_end;
              match character {
-             '+' => tokens.push(Token::Plus(line_num,col_num)),
-             '-' => tokens.push(Token::Subtract(line_num,col_num)),
-             '*' => tokens.push(Token::Multiply(line_num,col_num)),
-             '/' => tokens.push(Token::Divide(line_num,col_num)),
-             '%' => tokens.push(Token::Modulus(line_num,col_num)),
-             ',' => tokens.push(Token::Comma(line_num,col_num)),
-             '{' => tokens.push(Token::LeftCurly(line_num,col_num)),
-             '}' => tokens.push(Token::RightCurly(line_num,col_num)),
-             '(' => tokens.push(Token::LeftParen(line_num,col_num)),
-             ')' => tokens.push(Token::RightParen(line_num,col_num)),
-             ';' => tokens.push(Token::Semicolon(line_num,col_num)),
-             '=' => tokens.push(Token::Assign(line_num,col_num)),
+             '+' => add(&mut tokens, &mut locations, Token::Plus, line_num, col_num),
+             '-' => add(&mut tokens, &mut locations, Token::Subtract, line_num, col_num),
+             '*' => add(&mut tokens, &mut locations, Token::Multiply, line_num,col_num),
+             '/' => add(&mut tokens, &mut locations, Token::Divide, line_num, col_num),
+             '%' => add(&mut tokens, &mut locations, Token::Modulus, line_num, col_num),
+             ',' => add(&mut tokens, &mut locations, Token::Comma, line_num, col_num),
+             '{' => add(&mut tokens, &mut locations, Token::LeftCurly, line_num, col_num),
+             '}' => add(&mut tokens, &mut locations, Token::RightCurly, line_num, col_num),
+             '(' => add(&mut tokens, &mut locations, Token::LeftParen, line_num, col_num),
+             ')' => add(&mut tokens, &mut locations, Token::RightParen, line_num, col_num),
+             ';' => add(&mut tokens, &mut locations, Token::Semicolon, line_num, col_num),
+             '=' => add(&mut tokens, &mut locations, Token::Assign, line_num, col_num),
               _  => {
                  if !character.is_whitespace() {
                      let ident = &code[token_start..token_end];
@@ -282,35 +290,40 @@ fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
     match state_machine {
     StateMachine::Number => {
         let number = create_number(token_start, token_end, code);
-        tokens.push(Token::Num(line_num, (token_start + 1) as i32, number));
+        add(&mut tokens, &mut locations, Token::Num(number), line_num, col_num);
     }
     StateMachine::Ident => {
-        let ident = create_identifier(line_num, (token_start + 1) as i32, token_start, token_end, code);
-        tokens.push(ident);
+        let ident = create_identifier(token_start, token_end, code);
+        add(&mut tokens, &mut locations, ident, line_num, col_num);
     }
     _ => {}
     }
 
-    return Ok(tokens);
+    return Ok((tokens, locations));
 
     // helper functions
-    fn create_identifier(line: i32, col: i32, token_start: usize, token_end: usize, code: &str) -> Token {
+    fn create_identifier(token_start: usize, token_end: usize, code: &str) -> Token {
         let token = &code[token_start..token_end];
         match token {
-        "func" => Token::Func(line, col),
-        "return" => Token::Return(line, col),
-        "int" => Token::Int(line, col),
-        "print" => Token::Print(line, col),
-        "read" => Token::Read(line, col),
-        _ => Token::Ident(line, col, String::from(token))
+        "func" => Token::Func,
+        "return" => Token::Return,
+        "int" => Token::Int,
+        "print" => Token::Print,
+        "read" => Token::Read,
+        _ => Token::Ident(String::from(token))
         }
     }
 
+    fn add(tokens: &mut Vec<Token>, locations: &mut Vec<Loc>, tok: Token, line: i32, col: i32) {
+        tokens.push(tok);
+        locations.push(Loc{line, col});
+    }
+
     fn create_number(token_start: usize, token_end: usize, code: &str) -> i32 {
-        let token = &code[token_start..token_end];
-        match token.parse::<i32>() {
         // this code should correctly parse because the lexer verified that this is correct.
         // quit.
+        let token = &code[token_start..token_end];
+        match token.parse::<i32>() {
         Err(_) => panic!("Error. Logic Error: Lexer failed to lex number \"{token}\" correctly"),
         Ok(num) => num,
         }
@@ -384,7 +397,7 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<
         return epsilon();
     }
     Some(token) => {
-        if !matches!(token, Token::Func(_,_)) {
+        if !matches!(token, Token::Func) {
             return Err(Box::from("functions must begin with func"));
         }
     }
@@ -392,30 +405,30 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<
     }
 
     let func_ident = match next_error(tokens, index)? {
-    Token::Ident(_,_,func_ident) => func_ident,
+    Token::Ident(func_ident) => func_ident,
     _  => {return Err(Box::from("functions must have a function identifier"));}
     };
 
-    if !matches!( next_error(tokens, index)?, Token::LeftParen(_,_) ) {
+    if !matches!( next_error(tokens, index)?, Token::LeftParen) {
         return Err(Box::from("expected '('"));
     }
 
     loop {
        match next_error(tokens, index)? {
 
-       Token::RightParen(_,_) => {
+       Token::RightParen => {
            break;
        }
 
-       Token::Int(_,_) => {
+       Token::Int => {
            match next_error(tokens, index)? {
-           Token::Ident(_,_,param) => {
+           Token::Ident(param) => {
                println!("parameter {}", param);
                match peek_error(tokens, *index)? {
-               Token::Comma(_,_) => {
+               Token::Comma => {
                    *index += 1;
                }
-               Token::RightParen(_,_) => {}
+               Token::RightParen => {}
                _ => {
                    return Err(Box::from("expected ',' or ')'"));
                }
@@ -436,7 +449,7 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<
        }
     }
 
-    if !matches!(next_error(tokens, index)?, Token::LeftCurly(_,_)) {
+    if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
         return Err(Box::from("expected '{'"));
     }
 
@@ -449,7 +462,7 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<
 
     }
 
-    if !matches!(next_error(tokens, index)?, Token::RightCurly(_,_)) {
+    if !matches!(next_error(tokens, index)?, Token::RightCurly) {
       return Err(Box::from("expected '}'"));
     }
 
@@ -469,16 +482,16 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box
     Some(token) => {
         match token {
 
-        Token::RightCurly(_,_) => {
+        Token::RightCurly => {
             return epsilon();
         }
 
-        Token::Int(_,_) => {
+        Token::Int => {
             *index += 1;
             match next_error(tokens, index)? {
-            Token::Ident(_,_,ident) => {
+            Token::Ident(ident) => {
                 println!("declaration {}", ident);
-                if matches!(peek_error(tokens, *index)?, Token::Assign(_,_)) {
+                if matches!(peek_error(tokens, *index)?, Token::Assign) {
                     *index += 1;
                     _ = parse_expression(tokens, index);
                 }
@@ -491,41 +504,41 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box
             }
         }
 
-        Token::Ident(_,_,_) => {
+        Token::Ident(_) => {
             *index += 1;
-            if !matches!(next_error(tokens, index)?, Token::Assign(_,_)) {
+            if !matches!(next_error(tokens, index)?, Token::Assign) {
                 return Err(Box::from("expected '=' assignment operator"));
             }
             _ = parse_expression(tokens, index)?;
         }
 
-        Token::Return(_,_) => {
+        Token::Return => {
             *index += 1;
             _ = parse_expression(tokens, index)?;
         }
 
-        Token::Print(_,_) => {
+        Token::Print => {
             *index += 1;
-            if !matches!(next_error(tokens, index)?, Token::LeftParen(_,_)) {
+            if !matches!(next_error(tokens, index)?, Token::LeftParen) {
                 return Err(Box::from("expect '(' closing statement"));
             }
 
             _ = parse_expression(tokens, index)?;
 
-            if !matches!(next_error(tokens, index)?, Token::RightParen(_,_)) {
+            if !matches!(next_error(tokens, index)?, Token::RightParen) {
                 return Err(Box::from("expect ')' closing statement"));
             }
         }
 
-        Token::Read(_,_) => {
+        Token::Read => {
             *index += 1;
-            if !matches!(next_error(tokens, index)?, Token::LeftParen(_,_)) {
+            if !matches!(next_error(tokens, index)?, Token::LeftParen) {
                 return Err(Box::from("expect '(' closing statement"));
             }
 
             _ = parse_expression(tokens, index)?;
 
-            if !matches!(next_error(tokens, index)?, Token::RightParen(_,_)) {
+            if !matches!(next_error(tokens, index)?, Token::RightParen) {
                 return Err(Box::from("expect ')' closing statement"));
             }
         }
@@ -536,7 +549,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box
 
         }
 
-        if !matches!(next_error(tokens, index)?, Token::Semicolon(_,_)) {
+        if !matches!(next_error(tokens, index)?, Token::Semicolon) {
             return Err(Box::from("expect ';' closing statement"));
         }
 
@@ -550,13 +563,13 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Bo
     let mut code = parse_multiply_expression(tokens, index)?;
     loop {
        match peek_error(tokens, *index)? {
-       Token::Plus(_,_) => {
+       Token::Plus => {
            *index += 1;
            _ = parse_multiply_expression(tokens, index)?;
            code += "c = (add c b)\n";
        }
 
-       Token::Subtract(_,_) => {
+       Token::Subtract => {
            *index += 1;
            _ = parse_multiply_expression(tokens, index)?;
            code += "c = (sub c b)\n";
@@ -577,13 +590,13 @@ fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<S
     let mut code = parse_term(tokens, index)?;
     loop {
        match peek_error(tokens, *index)? {
-       Token::Multiply(_,_) => {
+       Token::Multiply => {
            *index += 1;
            _ = parse_term(tokens, index)?;
            code += "c = (mult c b)\n";
        }
 
-       Token::Divide(_,_) => {
+       Token::Divide => {
            *index += 1;
            _ = parse_term(tokens, index)?;
            code += "c = (divide c b)\n";
@@ -602,14 +615,14 @@ fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<S
 fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<dyn Error>> {
     match next_error(tokens, index) ? {
 
-    Token::Ident(_,_,ident) => {
+    Token::Ident(ident) => {
         match peek_error(tokens, *index)? {
-        Token::LeftParen(_,_) => {
+        Token::LeftParen => {
             *index += 1;
             loop {
                match peek_error(tokens, *index)? {
   
-               Token::RightParen(_,_) => {
+               Token::RightParen => {
                    *index += 1;
                    break;
                }
@@ -617,10 +630,10 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<dyn 
                _ => {
                    let _code = parse_expression(tokens, index)?;
                    match peek_error(tokens, *index)? {
-                   Token::Comma(_,_) => {
+                   Token::Comma => {
                        *index += 1;
                    }
-                   Token::RightParen(_,_) => {}
+                   Token::RightParen => {}
                    _ => {
                        return Err(Box::from("expected ',' or ')'"));
                    }
@@ -641,13 +654,13 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<dyn 
         }
     }
 
-    Token::Num(_,_,num) => {
+    Token::Num(num) => {
         return Ok(format!("{}", num));
     }
 
-    Token::LeftParen(_,_) => {
+    Token::LeftParen => {
         let _code = parse_expression(tokens, index)?;
-        if !matches!(next_error(tokens, index)?, Token::RightParen(_,_)) {
+        if !matches!(next_error(tokens, index)?, Token::RightParen) {
             return Err(Box::from("expected ')' parenthesis"));
         }
 
@@ -673,15 +686,15 @@ mod tests {
         let mut tokens = lex("1 + 2 + 3 * 44");
         match tokens {
         Err(_)=> {assert!(false);}
-        Ok(tok) => {
+        Ok((tok,_)) => {
             assert!(tok.len() == 7);
-            assert!(matches!(tok[0], Token::Num(_,_,1)));
-            assert!(matches!(tok[1], Token::Plus(_,_)));
-            assert!(matches!(tok[2], Token::Num(_,_,2)));
-            assert!(matches!(tok[3], Token::Plus(_,_)));
-            assert!(matches!(tok[4], Token::Num(_,_,3)));
-            assert!(matches!(tok[5], Token::Multiply(_,_)));
-            assert!(matches!(tok[6], Token::Num(_,_,44)));
+            assert!(matches!(tok[0], Token::Num(1)));
+            assert!(matches!(tok[1], Token::Plus));
+            assert!(matches!(tok[2], Token::Num(2)));
+            assert!(matches!(tok[3], Token::Plus));
+            assert!(matches!(tok[4], Token::Num(3)));
+            assert!(matches!(tok[5], Token::Multiply));
+            assert!(matches!(tok[6], Token::Num(44)));
         }
 
         }
@@ -690,13 +703,13 @@ mod tests {
         tokens = lex("1 / 2 - 3");
         match tokens {
         Err(_)=> {assert!(false);}
-        Ok(tok) => {
+        Ok((tok,_)) => {
             assert!(tok.len() == 5);
-            assert!(matches!(tok[0], Token::Num(_,_,1)));
-            assert!(matches!(tok[1], Token::Divide(_,_)));
-            assert!(matches!(tok[2], Token::Num(_,_,2)));
-            assert!(matches!(tok[3], Token::Subtract(_,_)));
-            assert!(matches!(tok[4], Token::Num(_,_,3)));
+            assert!(matches!(tok[0], Token::Num(1)));
+            assert!(matches!(tok[1], Token::Divide));
+            assert!(matches!(tok[2], Token::Num(2)));
+            assert!(matches!(tok[3], Token::Subtract));
+            assert!(matches!(tok[4], Token::Num(3)));
         }
 
         }
@@ -705,7 +718,7 @@ mod tests {
         tokens = lex("box333 c3a3r dog cat");
         match tokens {
         Err(_)=> {assert!(false);}
-        Ok(tok) => {
+        Ok((tok,_)) => {
             assert!(tok.len() == 4);
             assert!(is_name(&tok[0], "box333"));
             assert!(is_name(&tok[1], "c3a3r"));
@@ -713,7 +726,7 @@ mod tests {
             assert!(is_name(&tok[3], "cat"));
             fn is_name(t: &Token, name: &str) -> bool {
                 match t {
-                Token::Ident(_,_,id) => {return id.eq(name);}
+                Token::Ident(id) => {return id.eq(name);}
                 _ => {return false;}
                 }
             }
@@ -731,8 +744,6 @@ mod tests {
         }
 
     }
-
-
 }
 
 
