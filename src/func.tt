@@ -17,6 +17,12 @@ func mult(int a, int b) {
 }
 
 func main() {
-    int a = (1 + 2);
-    a = add(1, 2);
+    int a = 1;
+    int b = 2;
+    int c;
+    int d;
+    c = add(a, b);
+    print(c);
+    d = mult(c, a + b);
+    print(d);
 }

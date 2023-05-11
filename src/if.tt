@@ -1,9 +1,21 @@
 func main() {
-  int a = 100;
-  if a < 10 {
-    print(a);
+  int a = 50;
+  int b = 100;
+  int c;
+  if a < b {
+    c = 1;
   } else {
-    print(100);
+    c = 0;
   }
 
+  print(c);
+
+  a = 100;
+  b = 50;
+  if a < b {
+    c = 1;
+  } else {
+    c = 0;
+  }
+  print(c);
 }

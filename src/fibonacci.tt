@@ -1,0 +1,12 @@
+func fibonacci(int a) {
+    if a < 2 {
+        return a;
+    } else {
+        return fibonacci(a-1) + fibonacci(a-2);
+    }
+}
+
+func main() {
+    int c = fibonacci(5);
+    print(c);
+}

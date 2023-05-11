@@ -119,11 +119,49 @@ struct Expression {
 }
 
 static mut VAR_NUM: i64 = 0;
+static mut LOOP_NUM: i64 = 0;
+static mut LOOP_STACK: Vec<i64> = vec![];
+static mut IFS_ID: i64 = 0;
+
+fn create_ifs_id() -> i64 {
+    unsafe {
+        IFS_ID += 1;
+        IFS_ID
+    }
+}
+
+fn peek_label_stack() -> i64 {
+    unsafe {
+       match LOOP_STACK.last() {
+       None => panic!("Invalid. Attempt to pop empty stack."),
+       Some(x) => *x
+       }
+    }
+}
+
+fn push_label_id(id: i64) {
+    unsafe {
+        LOOP_STACK.push(id);
+    }
+}
+
+fn pop_label_id() {
+    unsafe {
+        LOOP_STACK.pop();
+    }
+}
 
 fn create_temp() -> String {
     unsafe {
         VAR_NUM += 1;
         format!("_temp{}", VAR_NUM)
+    }
+}
+
+fn create_label_id() -> i64 {
+    unsafe {
+        LOOP_NUM += 1;
+        LOOP_NUM
     }
 }
 
@@ -461,9 +499,13 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
             if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
                 return Err(Box::from("expected '{'"));
             }
-            let mut code = format!(":loopbegin\n");
-            code = format!("{}{}?:= loopbody, {}\n", code, expression.code, expression.name);
-            code = format!("{}:= endloop\n", code);
+
+            let id = create_label_id();
+            push_label_id(id);
+            let mut code = format!(": loopbegin{id}\n");
+            code = format!("{}{}?:= loopbody{id}, {}\n", code, expression.code, expression.name);
+            code = format!("{}:= endloop{id}\n", code);
+            code = format!("{}: loopbody{id}\n", code);
             loop {
                 let statement = match parse_statement(tokens, index)? {
                 CodeNode::Epsilon => {
@@ -481,8 +523,9 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
                 return Err(Box::from("expected '}'"));
             }
 
-            code = format!("{}:= loopbegin\n", code);
-            code = format!("{}: endloop\n", code);
+            pop_label_id();
+            code = format!("{}:= loopbegin{id}\n", code);
+            code = format!("{}: endloop{id}\n", code);
 
             codenode = CodeNode::Code(code);
             return Ok(codenode);
@@ -490,6 +533,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
 
         Token::If => {
             *index += 1;
+            let id = create_ifs_id();
             let expression = parse_boolean(tokens, index)?;
             if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
                 return Err(Box::from("expected '{'"));
@@ -535,23 +579,23 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
                     return Err(Box::from("expected '}'"));
                 }
                 let mut code = format!("{}", expression.code);
-                code = format!("{code}?:= iftrue, {}\n", expression.name);
-                code = format!("{code}:= else\n");
-                code = format!("{code}: iftrue\n");
+                code = format!("{code}?:= iftrue{id}, {}\n", expression.name);
+                code = format!("{code}:= else{id}\n");
+                code = format!("{code}: iftrue{id}\n");
                 code = format!("{code}{ifbody}");
-                code = format!("{code}:= endif\n");
-                code = format!("{code}: else\n");
+                code = format!("{code}:= endif{id}\n");
+                code = format!("{code}: else{id}\n");
                 code = format!("{code}{elsebody}");
-                code = format!("{code}: endif\n");
+                code = format!("{code}: endif{id}\n");
                 return Ok(CodeNode::Code(code));
 
             } else {
                 let mut code = format!("{}", expression.code);
-                code = format!("{code}?:= iftrue, {}\n", expression.name);
-                code = format!("{code}:= endif\n");
-                code = format!("{code}: iftrue\n");
+                code = format!("{code}?:= iftrue{id}, {}\n", expression.name);
+                code = format!("{code}:= endif{id}\n");
+                code = format!("{code}: iftrue{id}\n");
                 code = format!("{code}{ifbody}");
-                code = format!("{code}: endif\n");
+                code = format!("{code}: endif{id}\n");
                 return Ok(CodeNode::Code(code));
             }
             
@@ -627,12 +671,16 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
 
         Token::Break => {
             *index += 1;
-            codenode = CodeNode::Code(String::from("break"));
+            let id = peek_label_stack();
+            let stmt = format!(":= endloop{id}");
+            codenode = CodeNode::Code(stmt);
         }
 
         Token::Continue => {
             *index += 1;
-            codenode = CodeNode::Code(String::from("continue"));
+            let id = peek_label_stack();
+            let stmt = format!(":= loopbegin{id}\n");
+            codenode = CodeNode::Code(stmt);
         }
 
         _ => {

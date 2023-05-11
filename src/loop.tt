@@ -1,11 +1,7 @@
 func main() {
     int i = 0;
-    int j = 0;
     while i < 10 {
-        if i < 10 {
-            print(i);
-            i = i + 1;
-        }
+        print(i);
+        i = i + 1;
     }
-
 }
