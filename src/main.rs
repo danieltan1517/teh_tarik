@@ -702,32 +702,19 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression, Box<dyn Error>> {
     let mut expr = parse_multiply_expression(tokens, index)?;
     loop {
-       match peek_error(tokens, *index)? {
-       Token::Plus => {
-           *index += 1;
-           let m_expr = parse_multiply_expression(tokens, index)?;
-           let t = create_temp();
-           let instr = format!(". {}\n+ {}, {}, {}\n", t, t, expr.name, m_expr.name);
-           expr.code += &m_expr.code;
-           expr.code += &instr;
-           expr.name = t;
-       }
+       let opcode = match peek_error(tokens, *index)? {
+       Token::Plus => "+",
+       Token::Subtract => "-",
+       _ => { break; }
+       };
 
-       Token::Subtract => {
-           *index += 1;
-           let m_expr = parse_multiply_expression(tokens, index)?;
-           let t = create_temp();
-           let instr = format!(". {}\n- {}, {}, {}\n", t, t, expr.name, m_expr.name);
-           expr.code += &m_expr.code;
-           expr.code += &instr;
-           expr.name = t;
-       }
-
-       _ => {
-           break;
-       }
-
-       }
+       *index += 1;
+       let m_expr = parse_multiply_expression(tokens, index)?;
+       let t = create_temp();
+       let instr = format!(". {}\n{opcode} {}, {}, {}\n", t, t, expr.name, m_expr.name);
+       expr.code += &m_expr.code;
+       expr.code += &instr;
+       expr.name = t;
     }
 
     return Ok(expr);
@@ -737,42 +724,20 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression
 fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression, Box<dyn Error>> {
     let mut expression = parse_term(tokens, index)?;
     loop {
-       match peek_error(tokens, *index)? {
-       Token::Multiply => {
-           *index += 1;
-           let node = parse_term(tokens, index)?;
-           expression.code += &node.code;
-           let t = create_temp();
-           let instr = format!(". {}\n* {}, {}, {}\n", t, t, expression.name, node.name);
-           expression.code += &instr;
-           expression.name = t;
-       }
+       let opcode = match peek_error(tokens, *index)? {
+       Token::Multiply => "*",
+       Token::Divide => "/",
+       Token::Modulus => "%",
+       _ => { break; }
+       };
 
-       Token::Divide => {
-           *index += 1;
-           let node = parse_term(tokens, index)?;
-           expression.code += &node.code;
-           let t = create_temp();
-           let instr = format!(". {}\n/ {}, {}, {}\n", t, t, expression.name, node.name);
-           expression.code += &instr;
-           expression.name = t;
-       }
-
-       Token::Modulus => {
-           *index += 1;
-           let node = parse_term(tokens, index)?;
-           expression.code += &node.code;
-           let t = create_temp();
-           let instr = format!(". {}\n% {}, {}, {}\n", t, t, expression.name, node.name);
-           expression.code += &instr;
-           expression.name = t;
-       }
-
-       _ => {
-           break;
-       }
-
-       }
+       *index += 1;
+       let node = parse_term(tokens, index)?;
+       expression.code += &node.code;
+       let t = create_temp();
+       let instr = format!(". {}\n{opcode} {}, {}, {}\n", t, t, expression.name, node.name);
+       expression.code += &instr;
+       expression.name = t;
     }
 
     return Ok(expression);
