@@ -1,15 +1,14 @@
+
+# A function which takes in two numbers, a and b
+# and spits out a + b
 func add(int a, int b) {
     int c;
-    c = a + b;
+    c = a + b; 
     return c;
 }
 
-func sub(int a, int b) {
-    int c;
-    c = a + b;
-    return c;
-}
-
+# A function which takes in two numbers, a and b
+# and spits out a * b
 func mult(int a, int b) {
     int c;
     c = a * b;

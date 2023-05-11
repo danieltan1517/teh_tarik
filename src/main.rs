@@ -190,6 +190,8 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
                 StateMachine::Ident
             } else if character >= '0' && character <= '9' {
                 StateMachine::Number
+            } else if character == '#' {
+                StateMachine::Comment
             } else {
                 StateMachine::Init
             }
@@ -219,6 +221,14 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
         }
 
         StateMachine::ErrorNum => StateMachine::ErrorNum,
+
+        StateMachine::Comment => {
+            if character == '\n' {
+                StateMachine::Init
+            } else {
+                StateMachine::Comment
+            }
+        }
 
         };
 
@@ -255,7 +265,7 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
         }
 
         StateMachine::Number => {}
-
+        StateMachine::Comment => {}
         StateMachine::Ident => {}
 
         StateMachine::ErrorNum => {
@@ -327,6 +337,7 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
         Init,
         Number,
         Ident,
+        Comment,
         ErrorNum,
     }
 

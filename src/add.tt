@@ -1,3 +1,6 @@
+# A simple program which adds two numbers together
+# This program should output '150'
+
 func main() {
   int a;
   int b;
