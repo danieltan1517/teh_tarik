@@ -672,7 +672,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
         Token::Break => {
             *index += 1;
             let id = peek_label_stack();
-            let stmt = format!(":= endloop{id}");
+            let stmt = format!(":= endloop{id}\n");
             codenode = CodeNode::Code(stmt);
         }
 
