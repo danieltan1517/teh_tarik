@@ -102,7 +102,11 @@ enum Token {
 
   // comparison operators
   Less,
+  LessEqual,
   Greater,
+  GreaterEqual,
+  Equality,
+  NotEqual,
 
   Ident(String),
   Num(i32),
@@ -190,6 +194,8 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
                 StateMachine::Ident
             } else if character >= '0' && character <= '9' {
                 StateMachine::Number
+            } else if character == '<' || character == '>' || character == '=' || character == '!' {
+                StateMachine::Sign
             } else if character == '#' {
                 StateMachine::Comment
             } else {
@@ -230,6 +236,30 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
             }
         }
 
+        StateMachine::Sign => {
+            if character == '<' || character == '>' || character == '=' || character == '!' {
+                StateMachine::Sign
+            } else if character.is_alphabetic() {
+                let symbol = create_sign(token_start, token_end, code)?;
+                add(&mut tokens, &mut locations, symbol, line_num, col_num);
+                token_start = token_end;
+                StateMachine::Ident
+            } else if character >= '0' && character <= '9' {
+                let symbol = create_sign(token_start, token_end, code)?;
+                add(&mut tokens, &mut locations, symbol, line_num, col_num);
+                token_start = token_end;
+                StateMachine::Number
+            } else if character == '#' {
+                let symbol = create_sign(token_start, token_end, code)?;
+                add(&mut tokens, &mut locations, symbol, line_num, col_num);
+                StateMachine::Comment
+            } else {
+                let symbol = create_sign(token_start, token_end, code)?;
+                add(&mut tokens, &mut locations, symbol, line_num, col_num);
+                StateMachine::Init
+            }
+        }
+
         };
 
         token_end += 1;
@@ -250,9 +280,9 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
              '(' => add(&mut tokens, &mut locations, Token::LeftParen, line_num, col_num),
              ')' => add(&mut tokens, &mut locations, Token::RightParen, line_num, col_num),
              ';' => add(&mut tokens, &mut locations, Token::Semicolon, line_num, col_num),
-             '=' => add(&mut tokens, &mut locations, Token::Assign, line_num, col_num),
-             '<' => add(&mut tokens, &mut locations, Token::Less, line_num, col_num),
-             '>' => add(&mut tokens, &mut locations, Token::Greater, line_num, col_num),
+             //'=' => add(&mut tokens, &mut locations, Token::Assign, line_num, col_num),
+             //'<' => add(&mut tokens, &mut locations, Token::Less, line_num, col_num),
+             //'>' => add(&mut tokens, &mut locations, Token::Greater, line_num, col_num),
               _  => {
                  if !character.is_whitespace() {
                      let ident = &code[token_start..token_end];
@@ -275,6 +305,8 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
                 return Err(Box::from(message));
             }
         }
+
+        StateMachine::Sign => {}
 
         };
 
@@ -318,6 +350,20 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
         }
     }
 
+    fn create_sign(start: usize, end: usize, code: &str) -> Result<Token, Box<dyn Error>> {
+    let token = &code[start..end];
+    match token {
+    "<" => Ok(Token::Less),
+    "<=" => Ok(Token::LessEqual),
+    ">" => Ok(Token::Greater),
+    ">=" => Ok(Token::GreaterEqual),
+    "==" => Ok(Token::Equality),
+    "=" => Ok(Token::Assign),
+    "!=" => Ok(Token::NotEqual),
+    _ => return Err(Box::from(format!("invalid symbol {}", token))),
+    }
+    }
+
     fn add(tokens: &mut Vec<Token>, locations: &mut Vec<Loc>, tok: Token, line: i32, col: i32) {
         tokens.push(tok);
         locations.push(Loc{line, col});
@@ -337,6 +383,7 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
         Init,
         Number,
         Ident,
+        Sign,
         Comment,
         ErrorNum,
     }
@@ -759,8 +806,12 @@ fn parse_boolean(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression, B
 
     let opcode = match next_error(tokens, index)? {
     Token::Less => "<",
+    Token::LessEqual => "<=",
     Token::Greater => ">",
-    _ => {return Err(Box::from("invalid boolean expression. expected '<' or '>' comparison operator."));}
+    Token::GreaterEqual => ">=",
+    Token::Equality => "==",
+    Token::NotEqual => "!=",
+    _ => {return Err(Box::from("invalid boolean expression. expected comparison operator."));}
     };
     let node2 = parse_term(tokens, index)?;
 

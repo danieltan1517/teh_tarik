@@ -7,7 +7,7 @@ func main() {
   # the output of this if statement should be 1
   a = 50;
   b = 100;
-  if a < b {
+  if a != b {
     c = 1;
   } else {
     c = 0;
@@ -20,7 +20,7 @@ func main() {
   # the output of this if statement should be 0
   a = 100;
   b = 50;
-  if a < b {
+  if a == b {
     c = 1;
   } else {
     c = 0;
