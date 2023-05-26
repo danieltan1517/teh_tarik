@@ -69,20 +69,41 @@ while var < 3 {
     println!("var = {}", var);
     var += 1;
 }
+```
 
+### Block Expressions Evaluation
+
+You can denote a block of code using curly braces `{ }`. Unlike C, blocks of code can
+evaluate to values and assigned to variables, as shown in the examples below:
+
+```
 // create a block of code that evaluates to an expression.
 // https://doc.rust-lang.org/reference/expressions/block-expr.html
 let v = {
     let mut num = 0;
-    while var < 5 {
-        num += var;
-        var += 1;
+    while num < 5 {
+        num += 1;
     }
     num 
 };
 
 println!("v = {}", v);
 ```
+
+Due to this programming language feature, this allows someone to omit the return keyword and
+the code compiles correctly:
+```
+fn add(a: i32, b: i32) -> i32 {
+    a + b
+}
+```
+
+
+
+
+
+
+
 
 
 
