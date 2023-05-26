@@ -1,4 +1,4 @@
-# The Rust Programming Language: A Crash Course and Building Our First Parser
+# Building A Lexer in Rust
 
 ### Introduction
 
