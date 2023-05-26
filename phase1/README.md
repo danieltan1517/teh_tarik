@@ -19,6 +19,10 @@ are the basic, simple rules of the borrow checker:
 * References must always be valid. A reference cannot go out of scope
 * Variables cannot be borrowed as mutable and immutable at the same time
 
+There are many software programs that are unrepresentable when using a borrow checker. To
+turn off the borrow checker to represent those structures you can use `unsafe` to 
+represent those critical sections. Ideally, `unsafe` programs should be minimized.
+
 ### Hello Rust!
 
 Let us begin with a simple "Hello Rust!" program:
