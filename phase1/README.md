@@ -98,8 +98,14 @@ fn add(a: i32, b: i32) -> i32 {
 }
 ```
 
+### Strings and &str
 
+Unlike C, Rust has two string types:
+* `String`
+* `&str`
 
+`String` is a mutable resizable array of `u8` characters. `&str` is a read-only string reference 
+that is read-only. String literals such as `"Dog"` are always `&str`.
 
 
 
