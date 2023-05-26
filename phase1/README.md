@@ -111,9 +111,14 @@ Unlike C, Rust has two string types:
 `String` is a mutable resizable array of `u8` characters. `&str` is a read-only string reference 
 that is read-only. String literals such as `"Dog"` are always `&str`.
 
+```
+let string_ref: &str = "Dog";
+let string: String = String::from(string_ref);
+let string: String = String::from("Dog");
+let string_ref: &str = &string;
+```
 
+The following code above demonstrates how to convert between `&str` and `String` types.
 
-
-
-
+### References
 
