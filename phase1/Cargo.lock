@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "teh_tarik"
+name = "phase1"
 version = "0.1.0"
