@@ -128,14 +128,14 @@ make the data modifiable by the function.
 ```
 let mut num: i32 = 4;
 function(&num);
-function_with_ref(&mut num);
+function\_with\_ref(&mut num);
 println!("num: i32 = {}", num);
 
 fn function(num: &i32) {
     println!("num: &i32 = {}", num);
 }
 
-fn function_with_ref(num: &mut i32) {
+fn function\_with\_ref(num: &mut i32) {
     // add 200 to num.
     *num += 200;
     println!("num: &i32 = {}", num);
@@ -210,6 +210,7 @@ enum Token {
 
 ### Option and Result Types
 
+Documentation: [Error Handling](https://doc.rust-lang.org/book/ch09-00-error-handling.html)
 Unlike C, Rust does not have a `null` type. Instead, `Errors` and `None` Types are
 used to represent and document error pathways and make error pathways explicit. An
 `Option` type is either `Some(value)`, or `None`, and Rust enforces that the programmer
@@ -256,6 +257,164 @@ enum Result {
 }
 ```
 
+### Get Commandline Arguments
 
+This is how to obtain commandline arguments from Rust. We will be using commandline arguments to pass the name
+of the file to compile.
 
+[Command Line Arguments Documentation](https://doc.rust-lang.org/book/ch12-01-accepting-command-line-arguments.html)
 
+```
+use std::env;
+fn main() {
+    let args: Vec<String> = env::args().collect();
+    if args.len() == 1 {
+        println!("Please provide an input file through the commandline arguments for the lexer.");
+        return;
+    }
+
+    if args.len() > 2 {
+        println!("Too many commandline arguments.");
+        return;
+    }
+}
+```
+
+### Opening and read the entire file
+
+Code to open and read the entire file. This is used to get the all the high level programming language code
+from the file.
+
+```
+use std::fs;
+
+fn main() {
+    let filename = &args[1];
+    let code = match fs::read_to_string(filename) {
+    Err(error) => {
+        println!("**Error. File \"{}\": {}", filename, error);
+        return;
+    }
+
+    Ok(code) => {
+        code
+    } 
+
+    };
+
+    println!("Code:");
+    println!("{}", code);
+}
+```
+
+### Building a simple lexer
+
+Let's build a simple lexer that identifies numbers with multiple digits, as well
+as basic math operations such as `+`, `-`, `*`, `/`. A lexer can be represented as
+a finite automata using a `StateMachine` enum to represent the different states.
+
+```
+fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
+    let mut tokens: Vec<Token> = vec![];
+    let mut token_start: usize = 0;
+    let mut token_end:   usize = 0;
+    let mut line_num:    i32   = 1;
+    let mut col_num:     i32   = 1;
+    let mut state_machine = StateMachine::Init;
+
+    for character in code.chars() {
+
+        // state machine transitions.
+        state_machine = match state_machine {
+
+        StateMachine::Init => {
+            token_start = token_end;
+            if character >= '0' && character <= '9' {
+                StateMachine::Number
+            } else {
+                StateMachine::Init
+            }
+        }
+
+        StateMachine::Number => {
+            if character >= '0' && character <= '9' {
+                StateMachine::Number
+            } else {
+                let number = create_number(token_start, token_end, code);
+                tokens.push(Token::Num(number));
+                StateMachine::Init
+            }
+        }
+
+        };
+
+        token_end += 1;
+
+        // actions of state machine.
+        match state_machine {
+
+        StateMachine::Init => {
+             match character {
+             '+' => tokens.push(Token::Plus),
+             '-' => tokens.push(Token::Subtract),
+             '*' => tokens.push(Token::Multiply),
+             '/' => tokens.push(Token::Divide),
+             '%' => tokens.push(Token::Modulus),
+             '=' => tokens.push(Token::Assign),
+              _  => {
+                 if !character.is_whitespace() {
+                     let ident = &code[token_start..token_end];
+                     let message = format!("Error at line {}:{}. Unidentified symbol '{}'", line_num, col_num, ident);
+                     return Err(Box::from(message));
+                 }
+             }
+
+             }
+        }
+
+        StateMachine::Number => {}
+
+        };
+
+        if character == '\n' {
+            col_num = 1;
+            line_num += 1;
+        } else {
+            col_num += 1;
+        }
+    }
+
+    if matches!(state_machine, StateMachine::Number) {
+        let number = create_number(token_start, token_end, code);
+        tokens.push(Token::Num(number));
+    }
+
+    return Ok(tokens);
+
+    fn create_number(start: usize, end: usize, code: &str) -> i32 {
+        // this code should correctly parse because the lexer verified that this is correct.
+        // quit.
+        let token = &code[start..end];
+        match token.parse::<i32>() {
+        Err(_) => panic!("Error. Logic Error: Lexer failed to lex number \"{token}\" correctly"),
+        Ok(num) => num,
+        }
+    }
+
+    enum StateMachine {
+        Init,
+        Number,
+    }
+}
+```
+
+These following lines are used to determine and location number of the tokens for the purposes of error
+handling. These are important for telling users about the location of the error in the case of badly formed input.
+```
+if character == '\n' {
+    col_num = 1;
+    line_num += 1;
+} else {
+    col_num += 1;
+}
+```
