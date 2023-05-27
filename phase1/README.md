@@ -122,10 +122,10 @@ Unlike C, Rust has two string types:
 that is read-only. String literals such as `"Dog"` are always `&str`.
 
 ```
-let string\_ref: &str = "Dog";
-let string: String = String::from(string\_ref);
+let string_ref: &str = "Dog";
+let string: String = String::from(string_ref);
 let string: String = String::from("Dog");
-let string\_ref: &str = &string;
+let string_ref: &str = &string;
 ```
 
 The following code above demonstrates how to convert between `&str` and `String` types.
@@ -138,14 +138,14 @@ make the data modifiable by the function.
 ```
 let mut num: i32 = 4;
 function(&num);
-function\_with\_ref(&mut num);
+function_with_ref(&mut num);
 println!("num: i32 = {}", num);
 
 fn function(num: &i32) {
     println!("num: &i32 = {}", num);
 }
 
-fn function\_with\_ref(num: &mut i32) {
+fn function_with_ref(num: &mut i32) {
     // add 200 to num.
     *num += 200;
     println!("num: &i32 = {}", num);
@@ -487,7 +487,7 @@ you may want to focus on certain parts and save the implementation details of ot
 use the macro `todo!();` to mark up sections of the code that are unfinished.
 
 ```
-fn complicated\_function(x: i32, y: i32, z: i32) -> i32 {
+fn complicated_function(x: i32, y: i32, z: i32) -> i32 {
     if x < y {
        // do complex code
     } else {
