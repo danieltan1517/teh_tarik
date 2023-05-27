@@ -23,6 +23,14 @@ There are many software programs that are unrepresentable when using a borrow ch
 turn off the borrow checker to represent those structures you can use `unsafe` to 
 represent those critical sections. Ideally, `unsafe` programs should be minimized.
 
+### Getting Started
+
+Create a new project with `cargo new compiler_project`.
+
+`cd compiler_project/src`.
+
+Open the `main.rs` file.
+
 ### Hello Rust!
 
 Let us begin with a simple "Hello Rust!" program:
@@ -39,6 +47,8 @@ macro call. Rust macros are a powerful part of Rust's powerful metaprogramming s
 
 Just like C, comments in Rust are declared with `//` and multiline comments are denoted with
 `/* comment */`. Unlike C, multiline comments in Rust can be nested.
+
+To run your program, type `cargo run` to execute your program.
 
 ### Variable Declarations
 
@@ -282,6 +292,9 @@ fn main() {
 }
 ```
 
+To run your program with commandline arguments `arg1` `arg2` arg3`, type `cargo run arg1 arg2 arg3` to execute your program
+with the commandline arguments.
+
 ### Opening and read the entire file
 
 Code to open and read the entire file. This is used to get the all the high level programming language code
@@ -291,7 +304,7 @@ from the file.
 use std::fs;
 
 fn main() {
-    let filename = &args[1];
+    let filename = "file.txt";
     let code = match fs::read_to_string(filename) {
     Err(error) => {
         println!("**Error. File \"{}\": {}", filename, error);
