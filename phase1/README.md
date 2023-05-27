@@ -210,8 +210,51 @@ enum Token {
 
 ### Option and Result Types
 
-Unlike C, Rust does not have a `null`
+Unlike C, Rust does not have a `null` type. Instead, `Errors` and `None` Types are
+used to represent and document error pathways and make error pathways explicit. An
+`Option` type is either `Some(value)`, or `None`, and Rust enforces that the programmer
+checks that an `Option` unwraps correctly before accessing the `value` itself.
 
+The `Option` enum can be summarized as follows:
+```
+enum Option {
+    Some(val),
+    None,
+}
+```
+
+Option values can be unwrapped in the following ways:
+```
+let option: Option<i32> = Some(1);
+if let Some(value) = option {
+    // value has been unwrapped. use it.
+    println!("value = {}", value);
+}
+
+match option {
+
+Some(value) => {
+    // value has been unwrapped. use it.
+    println!("value = {}", value);
+}
+
+None => {
+
+}
+
+}
+```
+
+`Result` has almost similar functionality to `Option`. `Ok(value)` is equivalent to
+`Some(value)`. Instead of `None`, however, `Err` in `Result` allows someone to send additional
+error message information on top of `Err`.
+
+```
+enum Result {
+    Ok(val),
+    Err(error_info),
+}
+```
 
 
 
