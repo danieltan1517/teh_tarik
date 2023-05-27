@@ -141,6 +141,11 @@ fn next\_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Toke
 }
 ```
 
+### ? Operator
+
+The `?` operator is an error propagation operation. If result of the operation causes an error, the execution of the program
+stops and the error value is returned. This technique can simplify the error handling code in Rust.
+
 ### Simple Parsing Expression Exercise
 
 In the `src/main.rs` file associated with Phase 2, there is a parser for parsing an arbitrarily complex mathematical expressions.

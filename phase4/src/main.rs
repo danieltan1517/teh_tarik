@@ -1,3 +1,4 @@
 fn main() {
-    println!("Hello Code Generator Phase 4!");
+    let array = vec![1, 2, 3, 4];
+    println!("{}", array[10000]);
 }
