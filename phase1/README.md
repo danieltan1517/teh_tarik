@@ -497,7 +497,19 @@ fn complicated_function(x: i32, y: i32, z: i32) -> i32 {
 }
 ```
 
+### Panic
 
+panics occur when unexpected runtime behavior happens, such as array index out of bounds, or integer overflow/underflow.
+A panic can be manually triggered using the `panic!` macro.
+
+```
+panic!("this is a panic.");
+```
+
+### Unwrap
+
+You can use `unwrap` on a `Result` or `Option` type to unwrap the value inside the `Result` or `Option` type.
+If `unwrap` is used on `None` or `Err` values, the program panics.
 
 
 
