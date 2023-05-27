@@ -172,9 +172,72 @@ A program consists of multiple functions, and we loop over the tokens, parsing o
 
 We then create another function called `parse_function` that will parse the functions.
 
+Assuming that the function grammar is as follows:
+```
+func main() {
+    // insert statements here...
+}
+```
+We can write `parse_function` like this:
+
+```
+enum CodeNode {
+   Epsilon, // for denoting that a code is null
+   Data,    // for putting function data.
+}
+
+fn parse\_function(tokens: &Vec<Token>, index: &mut usize) -> Result\<CodeNode, Box \< dyn Error\>\> {
+    
+    match next(tokens, index) {
+    None => {
+        return Ok(CodeNode::Epsilon);
+    }
+    Some(token) => {
+        if !matches!(token, Token::Func) {
+            return Err(Box::from("functions must begin with func"));
+        }
+    }
+
+    }
+
+    let func_ident = match next_error(tokens, index)? {
+    Token::Ident(func_ident) => func_ident,
+    _  => {return Err(Box::from("functions must have a function identifier"));}
+    };
+
+    if !matches!( next_error(tokens, index)?, Token::LeftParen) {
+        return Err(Box::from("expected '('"));
+    }
+
+    if !matches!( next_error(tokens, index)?, Token::RightParen) {
+        return Err(Box::from("expected ')'"));
+    }
 
 
+    if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
+        return Err(Box::from("expected '{'"));
+    }
 
+    loop {
+        match parse_statement(tokens, index)? {
+        CodeNode::Epsilon => {
+            break;
+        }
+
+        CodeNode::Data => {
+            // do something.
+        }
+
+        }
+    }
+
+    if !matches!(next_error(tokens, index)?, Token::RightCurly) {
+      return Err(Box::from("expected '}'"));
+    }
+
+    return Ok(CodeNode::Data);
+}
+```
 
 
 
