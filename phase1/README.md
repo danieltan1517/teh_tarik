@@ -425,6 +425,7 @@ fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
 
 These following lines are used to determine and location number of the tokens for the purposes of error
 handling. These are important for telling users about the location of the error in the case of badly formed input.
+
 ```
 if character == '\n' {
     col_num = 1;
@@ -433,3 +434,71 @@ if character == '\n' {
     col_num += 1;
 }
 ```
+
+### Testing
+
+Testing different parts of software and testing parts of software as a whole is a key way of showing software robustness.
+Testing is a good way of showing that regressions do not occur when adding new features to software. Rust has an excellent
+testing framework that we will make use of.
+
+[Writing Tests in Rust](https://doc.rust-lang.org/book/ch11-01-writing-tests.html)
+
+A module is a way to split up code in Rust into hierarchical logical units and manage visibility between them. A module can contain functions, structs, other kinds of code, etc. 
+
+```
+#[cfg(test)]
+mod tests {
+    use crate::Token;
+    use crate::lex;
+
+    #[test]
+    fn lexer_test() {
+        // test that lexer works on correct cases
+        let toks = lex("1 + 2 + 3").unwrap();
+        assert!(toks.len() == 5);
+        assert!(matches!(toks[0], Token::Num(1)));
+        assert!(matches!(toks[1], Token::Plus));
+        assert!(matches!(toks[2], Token::Num(2)));
+        assert!(matches!(toks[3], Token::Plus));
+        assert!(matches!(toks[4], Token::Num(3)));
+
+        // test that the lexer catches invalid tokens
+        assert!(matches!(lex("^^^"), Err(_)));
+    }
+
+}
+```
+
+The `#[cfg(test)]` macro marks the module as a module used to test the code. The `#[test]` macro marks the function as a test
+to be run by the compiler. Anything not marked `#[test]` will not be considered a test.
+
+To run all tests, type `cargo test` to run all the tests.
+
+To run only one specific test, type `cargo test lexer_test` to run only that particular test.
+
+Use Rust tests to ensure that the software you write is robust.
+
+# Tips and Tricks
+
+### TODO
+
+The Rust Compiler Attempts to be thorough in static analysis and verification. However, while developing code,
+you may want to focus on certain parts and save the implementation details of other parts for later. You can
+use the macro `todo!();` to mark up sections of the code that are unfinished.
+
+```
+fn complicated\_function(x: i32, y: i32, z: i32) -> i32 {
+    if x < y {
+       // do complex code
+    } else {
+       // I need to implement this later...
+       todo!()
+    }
+}
+```
+
+
+
+
+
+

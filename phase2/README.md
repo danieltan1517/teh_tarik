@@ -141,5 +141,20 @@ fn next_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token
 }
 ```
 
+### Simple Parsing Expression Exercise
+
+In the `src/main.rs` file associated with Phase 2, there is a parser for parsing an arbitrarily complex mathematical expressions.
+It takes a complex math expression, such as `1 + 2 * (3 + 4)`, and parses out the math expression. It returns an integer
+answer as a result from the expression.
+
+The grammar provided is one way to handle operator precedence expressions corrrectly.
+
+Can you figure out how to compute the right answer to
+
 ### Building the Parser
+
+Start by creating
+
+
+
 
