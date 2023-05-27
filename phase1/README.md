@@ -112,13 +112,107 @@ Unlike C, Rust has two string types:
 that is read-only. String literals such as `"Dog"` are always `&str`.
 
 ```
-let string_ref: &str = "Dog";
-let string: String = String::from(string_ref);
+let string\_ref: &str = "Dog";
+let string: String = String::from(string\_ref);
 let string: String = String::from("Dog");
-let string_ref: &str = &string;
+let string\_ref: &str = &string;
 ```
 
 The following code above demonstrates how to convert between `&str` and `String` types.
 
 ### References
+
+Similar to C++, Rust has a reference type. References can be used to pass data read-only. A `&mut ` will
+make the data modifiable by the function.
+
+```
+let mut num: i32 = 4;
+function(&num);
+function_with_ref(&mut num);
+println!("num: i32 = {}", num);
+
+fn function(num: &i32) {
+    println!("num: &i32 = {}", num);
+}
+
+fn function_with_ref(num: &mut i32) {
+    // add 200 to num.
+    *num += 200;
+    println!("num: &i32 = {}", num);
+}
+```
+
+### Pattern Matching
+
+`match` is the Rust equivalent to switch statements in C. Unlike C, `match` statements do not default to fallthrough.
+`match` performs pattern matching on any arbitrary type. `_` is a default case, and if none of the cases are met, `_`
+is executed.
+```
+let animal = "cat";
+match animal {
+"cow" => {
+    println!("cow says: \"Moo!\"");
+}
+"cat" => {
+    println!("cat says: \"Meow!\"");
+}
+"dog" => {
+    println!("dog says: \"Wuff!\"");
+}
+_ => {
+    println!("default case = {}", animal);
+}
+
+}
+
+let num = 3;
+match num {
+1 => println!("January is the first month of the year."),
+2 => println!("Febuary is the second month of the year."),
+3 => println!("March is the third month of the year."),
+_ => println!("...Etc."),
+}
+```
+
+### Struct
+
+Structs are a grouping of variables together. Rust struct declarations are as follows:
+```
+struct Vec3 {
+    x: float,
+    y: float,
+    z: float,
+}
+```
+
+### Enum
+
+Documentation: [Enums](https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html)
+Enums are a way of saying a value is one of a possible set of values.
+Unlike C, Rust enums can have values associated with that particular enum value.
+for example, a `Num` has a `i32` value associated exclusively with `Num`, 
+but Plus, Subtract, Multiply, etc. have no values associated with it. Enums simulate
+a "Sum Type" available within functional programming languages such as Haskell, Scheme, and Common Lisp,
+and bring those concepts down to imperative compiled performant languages such as Rust.
+
+```
+#[derive(Debug, Clone)]
+enum Token {
+  Plus,
+  Subtract,
+  Multiply,
+  Divide,
+  Modulus,
+  Assign,
+  Num(i32),
+}
+```
+
+### Option and Result Types
+
+Unlike C, Rust does not have a `null`
+
+
+
+
 

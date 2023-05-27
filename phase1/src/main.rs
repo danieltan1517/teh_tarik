@@ -115,7 +115,7 @@ fn main() {
            println!("dog says: \"Wuff!\"");
        }
        _ => {
-
+           println!("default case = {}", animal);
        }
 
        }
