@@ -239,5 +239,12 @@ fn parse\_function(tokens: &Vec<Token>, index: &mut usize) -> Result\<CodeNode, 
 }
 ```
 
+Writing `parse_statement` follows a similar pattern to `parse_function` and `parse_program`. You can
+modify the `parse_expression` example to make it into a statement.
+
+
+
+
+
 
 
