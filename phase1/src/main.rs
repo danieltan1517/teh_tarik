@@ -333,7 +333,7 @@ mod tests {
         assert!(matches!(toks[4], Token::Num(3)));
 
         // test that the lexer catches invalid tokens
-        assert!(matches!(lex("aaa"), Err(_)));
+        assert!(matches!(lex("^^^"), Err(_)));
     }
 
 }
