@@ -152,12 +152,8 @@ fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
 
     fn create_number(start: usize, end: usize, code: &str) -> i32 {
         // this code should correctly parse because the lexer verified that this is correct.
-        // quit.
         let token = &code[start..end];
-        match token.parse::<i32>() {
-        Err(_) => panic!("Error. Logic Error: Lexer failed to lex number \"{token}\" correctly"),
-        Ok(num) => num,
-        }
+        token.parse::<i32>().unwrap()
     }
 
     enum StateMachine {

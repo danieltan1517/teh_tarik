@@ -299,7 +299,7 @@ fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
         // this code should correctly parse because the lexer verified that this is correct.
         // quit.
         let token = &code[start..end];
-        match token.parse::<i32>() {
+        match token.parse::<i32>().unwrap()
         Err(_) => panic!("Error. Logic Error: Lexer failed to lex number \"{token}\" correctly"),
         Ok(num) => num,
         }
