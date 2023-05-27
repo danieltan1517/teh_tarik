@@ -188,6 +188,7 @@ struct Vec3 {
 ### Enum
 
 Documentation: [Enums](https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html)
+
 Enums are a way of saying a value is one of a possible set of values.
 Unlike C, Rust enums can have values associated with that particular enum value.
 for example, a `Num` has a `i32` value associated exclusively with `Num`, 
@@ -211,6 +212,7 @@ enum Token {
 ### Option and Result Types
 
 Documentation: [Error Handling](https://doc.rust-lang.org/book/ch09-00-error-handling.html)
+
 Unlike C, Rust does not have a `null` type. Instead, `Errors` and `None` Types are
 used to represent and document error pathways and make error pathways explicit. An
 `Option` type is either `Some(value)`, or `None`, and Rust enforces that the programmer
