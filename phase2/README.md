@@ -143,6 +143,8 @@ fn next\_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Toke
 
 ### ? Operator
 
+Documentation: [? Operator](https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html#where-the--operator-can-be-used)
+
 The `?` operator is an error propagation operation. If result of the operation causes an error, the execution of the program
 stops and the error value is returned. If the result is not an error, the `?` operator unwraps the `Result` or `Option` automatically
 for you. This technique can simplify the error handling code in Rust.
