@@ -29,7 +29,7 @@ Create a new project with `cargo new compiler_project`.
 
 `cd compiler_project/src`.
 
-Open the `main.rs` file.
+Open the `main.rs` file using a text editor/IDE.
 
 ### Hello Rust!
 
