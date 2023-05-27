@@ -511,6 +511,9 @@ panic!("this is a panic.");
 You can use `unwrap` on a `Result` or `Option` type to unwrap the value inside the `Result` or `Option` type.
 If `unwrap` is used on `None` or `Err` values, the program panics.
 
-
+```
+let value: Option<i32> = Some(100);
+let number = value.unwrap();
+```
 
 
