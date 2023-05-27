@@ -282,7 +282,6 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<dyn Err
 // Rust will then run all the functions annotated with the "#[test]" keyword.
 #[cfg(test)]
 mod tests {
-    use crate::Token;
     use crate::lex;
     use crate::parse_expression;
 
