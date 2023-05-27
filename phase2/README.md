@@ -73,7 +73,73 @@ parse_declaration_statement(tokens: Array<Token>) -> Result(value,Error) {
 }
 ```
 
+### Lifetimes
 
+[Lifetimes Documentation](https://doc.rust-lang.org/rust-by-example/scope/lifetime.html)
 
+A lifetime is a construct the Rust borrow checker uses to ensure all reference borrows
+are valid. A variable lifetime begins when it is created and ends when it is destroyed.
+A lifetime annotates a program telling the programmer that a reference must live as long
+as the original object itself. A reference cannot refer to invalid objects that no longer exists,
+and lifetime annotations ensure that there are no dangling references.
 
+Consider a function `longest_string` which returns a reference to `longest_string`. The lifetime
+annotations are required here to ensure that return value reference lasts as long as `a` and `b`.
+If the return value refence does not last as long as `a` and `b`, this will result in a compiler
+error. Lifetime annotations is how Rust tracks reference times to make sure a program is correct.
+
+```
+fn longest_string<'a>(a: &'a str, b: &'a str) -> &'a str {
+  if a.len() > b.len() {
+    a
+  } else {
+    b
+  }
+}
+```
+
+We will be using lifetimes in this project for getting a valid reference to the list of tokens
+and using the borrow checker to verify that a lifetime remains valid. Please note that there are two
+sets of the same function: a function that returns a `Result` and another one which returns `Option`.
+This is because there are situations where returning nothing is not an error.
+
+```
+fn peek<'a>(tokens: &'a Vec<Token>, index: usize) -> Option<&'a Token> {
+    if index < tokens.len() {
+        return Some(&tokens[index])
+    } else {
+        return None
+    }
+}
+
+fn peek_error<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box<dyn Error>> {
+    if index < tokens.len() {
+        return Ok(&tokens[index])
+    } else {
+        return Err(Box::from("expected a token, but got nothing"))
+    }
+}
+
+fn next<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Option<&'a Token> {
+    if *index < tokens.len() {
+        let ret = *index;
+        *index += 1;
+        return Some(&tokens[ret])
+    } else {
+        return None
+    }
+}
+
+fn next_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, Box<dyn Error>> {
+    if *index < tokens.len() {
+        let ret = *index;
+        *index += 1;
+        return Ok(&tokens[ret])
+    } else {
+        return Err(Box::from("expected a token, but got nothing"))
+    }
+}
+```
+
+### Building the Parser
 

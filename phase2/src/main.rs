@@ -279,9 +279,6 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<dyn Err
     }
 }
 
-// writing tests!
-// testing shows robustness in software, and is good for spotting regressions
-// to run a test, type "cargo test" in the terminal.
 // Rust will then run all the functions annotated with the "#[test]" keyword.
 #[cfg(test)]
 mod tests {
