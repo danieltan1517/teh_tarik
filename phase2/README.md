@@ -112,7 +112,7 @@ fn peek<'a>(tokens: &'a Vec<Token>, index: usize) -> Option<&'a Token> {
     }
 }
 
-fn peek_error<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box<dyn Error>> {
+fn peek\_error<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box<dyn Error>> {
     if index < tokens.len() {
         return Ok(&tokens[index])
     } else {
@@ -130,7 +130,7 @@ fn next<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Option<&'a Token> {
     }
 }
 
-fn next_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, Box<dyn Error>> {
+fn next\_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, Box<dyn Error>> {
     if *index < tokens.len() {
         let ret = *index;
         *index += 1;
@@ -149,11 +149,31 @@ answer as a result from the expression.
 
 The grammar provided is one way to handle operator precedence expressions corrrectly.
 
-Can you figure out how to compute the right answer to
+Can you figure out how to compute the correct answer to expression given the operator precedence?
 
-### Building the Parser
+### Building a Top Down Parser
 
-Start by creating
+Start by creating a function called `parse_program`. It will take in a list of tokens and index marking where the parser is.
+It will return a return a `Result`, where `Result` can either be `Err` or it will be fine.
+```
+fn parse\_program(tokens: &Vec<Tokens>, index: &mut usize) -> Result< (), Box<dyn Error>> {
+    loop {
+        let val = parse_function(tokens, index)?;
+        match val {
+        Function::Epsilon => {
+            break;
+        }
+        }
+    }
+}
+```
+
+A program consists of multiple functions, and we loop over the tokens, parsing out the functions.
+
+We then create another function called `parse_function` that will parse the functions.
+
+
+
 
 
 
