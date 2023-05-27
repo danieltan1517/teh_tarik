@@ -174,6 +174,8 @@ fn main() {
 
     println!("----------------------");
     println!("Finished Lexing the file {}", filename);
+    println!("Expression:");
+    println!("{code}");
     println!("Here are the Results:");
     println!("----------------------");
     for t in &tokens {
