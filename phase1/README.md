@@ -435,6 +435,60 @@ if character == '\n' {
 }
 ```
 
+### Hints on Identifiers
+
+An identifier could be identified in a way similar to how numbers are identified, just add a state to the state machine
+for identifiers. `if`, `while`, `read` keywords conflicts with identifiers. When creating a identifier, check to see that
+the string is not a keyword. If it is in the list of keywords, return the appropriate keyword. Else, create a string
+using `String::from(token)` and create an identifier token.
+
+```
+fn create_identifier(token_start: usize, token_end: usize, code: &str) -> Token {
+    let token = &code[token_start..token_end];
+    match token {
+    "func" => Token::Func,
+    "return" => Token::Return,
+    "int" => Token::Int,
+
+    // ... all keywords...
+
+    "read" => Token::Read,
+    "while" => Token::While,
+    "if" => Token::If,
+    _ => Token::Ident(String::from(token)),
+    }
+}
+```
+
+Just like the way number tokens are handled, you can handle identifiers in the same exact way.
+
+```
+let ident_token = create_identifier(start, end, code);
+tokens.push(ident_token);
+```
+
+Note that there are multiple ways to do this, and this is not the only way to cleanly implement this.
+
+### Hints on Sign
+
+Signs can be handled in a similar way to identifiers. Just add a state to the state machine for sign tokens.
+
+```
+fn create_sign(start: usize, end: usize, code: &str) -> Result<Token, Box<dyn Error>> {
+    let token = &code[start..end];
+    match token {
+    "<" => Ok(Token::Less),
+    "<=" => Ok(Token::LessEqual),
+    ">" => Ok(Token::Greater),
+    ">=" => Ok(Token::GreaterEqual),
+    "==" => Ok(Token::Equality),
+    "=" => Ok(Token::Assign),
+    "!=" => Ok(Token::NotEqual),
+    _ => return Err(Box::from(format!("invalid symbol {}", token))),
+}
+}
+```
+
 ### Testing
 
 Testing different parts of software and testing parts of software as a whole is a key way of showing software robustness.
