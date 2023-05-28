@@ -114,6 +114,8 @@ fn add(a: i32, b: i32) -> i32 {
 
 ### Strings and &str
 
+[String Documentation](https://doc.rust-lang.org/std/string/struct.String.html)
+
 Unlike C, Rust has two string types:
 * `String`
 * `&str`
@@ -129,6 +131,16 @@ let string_ref: &str = &string;
 ```
 
 The following code above demonstrates how to convert between `&str` and `String` types.
+
+Rust allows someone to create substring references using `string_variable[start..end]`.
+
+```
+let name = "Ada Lovelace";
+let first_name = &name[0..3];
+let last_name =  &name[4..];
+println!("{first_name}");
+println!("{last_name}");
+```
 
 ### References
 
