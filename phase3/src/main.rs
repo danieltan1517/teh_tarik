@@ -327,6 +327,8 @@ fn next_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token
     }
 }
 
+// parse programs with multiple functions
+// loop over everything, outputting generated code.
 fn parse_program(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<dyn Error>> {
     let mut generated_code = String::from("");
     loop {
@@ -342,6 +344,13 @@ fn parse_program(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Box<d
 
     return Ok(generated_code);
 }
+
+// parse function such as:
+// func main(int a, int b) {
+//    # ... statements here...
+//    # ...
+// }
+// a loop is done to handle statements.
 
 fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Box<dyn Error>> {
     
@@ -435,6 +444,13 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Bo
     return Ok(CodeNode::Code(code));
 }
 
+// parsing a statement such as:
+// int a;
+// a = a + b;
+// a = a % b;
+// print(a)
+// read(a)
+// returns epsilon if '}'
 fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Box<dyn Error>> {
     match peek(tokens, *index) {
     None => {
@@ -527,10 +543,10 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
 }
 
 // parsing an expression such as:
+// "a" (alone)
 // "a + b"
 // "a * b"
 // "a - b"
-
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression, Box<dyn Error>> {
     let mut expr = parse_term(tokens, index)?;
     let opcode = match peek_error(tokens, *index)? {
