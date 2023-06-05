@@ -484,26 +484,37 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
             }
         }
 
-        // newly added while loop.
+        // while loop.
         Token::While => {
-            if !matches!(next_error(tokens, index)?, Token::LeftParen) {
-                return Err(Box::from("expect '(' closing statement"));
-            }
+            *index += 1;
+            // need to do code generation for while loops.
+            // 
+            // 
+            todo!();
 
             let _expr = parse_boolean_expr(tokens, index)?;
-
-            if !matches!(next_error(tokens, index)?, Token::RightParen) {
-                return Err(Box::from("expect ')' closing statement"));
-            }
 
             if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
                 return Err(Box::from("expect '(' closing statement"));
             }
 
+            loop {
+                match parse_statement(tokens, index)? {
+                CodeNode::Epsilon => {
+                    break;
+                }
+                CodeNode::Code(_) => {
+
+                }
+                }
+            }
+
             if !matches!(next_error(tokens, index)?, Token::RightCurly) {
                 return Err(Box::from("expect '(' closing statement"));
             }
-            todo!();
+            
+            codenode = CodeNode::Code(String::from(""));
+            return Ok(codenode);
         }
 
         Token::Ident(ident) => {
