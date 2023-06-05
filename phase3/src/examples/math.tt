@@ -1,0 +1,38 @@
+# A simple program which shows mathematical operations.
+
+func main() {
+  int a;
+  int b;
+  int c;
+
+  # This should output '150'
+  a = 100;
+  b = 50;
+  c = a + b;
+  print(c);
+
+  # This should output '50'
+  a = 100;
+  b = 50;
+  c = a - b;
+  print(c);
+
+  # This should output '5000'
+  a = 100;
+  b = 50;
+  c = a * b;
+  print(c);
+
+  # This should output '2'
+  a = 100;
+  b = 50;
+  c = a / b;
+  print(c);
+
+  # This should output '0'
+  a = 100;
+  b = 50;
+  c = a % b;
+  print(c);
+
+}
