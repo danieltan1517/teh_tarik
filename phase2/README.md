@@ -73,6 +73,22 @@ parse_declaration_statement(tokens: Array<Token>) -> Result(value,Error) {
 }
 ```
 
+### matches!() statement
+
+[matches macro](https://doc.rust-lang.org/std/macro.matches.html)
+
+This macro returns `true` when the two parameters are equivalent, and returns `false` when the two parameters
+are not equivalent.
+
+```
+let token = Token::Func;
+if matches!(token, Token::Func) {
+    println!("True");
+} else {
+    println!("False");
+}
+```
+
 ### Lifetimes
 
 [Lifetimes Documentation](https://doc.rust-lang.org/rust-by-example/scope/lifetime.html)
@@ -112,7 +128,7 @@ fn peek<'a>(tokens: &'a Vec<Token>, index: usize) -> Option<&'a Token> {
     }
 }
 
-fn peek\_error<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box<dyn Error>> {
+fn peek_error<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box<dyn Error>> {
     if index < tokens.len() {
         return Ok(&tokens[index])
     } else {
@@ -130,7 +146,7 @@ fn next<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Option<&'a Token> {
     }
 }
 
-fn next\_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, Box<dyn Error>> {
+fn next_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, Box<dyn Error>> {
     if *index < tokens.len() {
         let ret = *index;
         *index += 1;
@@ -146,7 +162,8 @@ fn next\_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Toke
 Documentation: [? Operator](https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html#where-the--operator-can-be-used)
 
 The `?` operator is an error propagation operation. If result of the operation causes an error, the execution of the program
-stops and the error value is returned. If the result is not an error, the `?` operator unwraps the `Result` or `Option` automatically
+stops and the error value is returned. In order for `?` operator to function correctly, the error value type **must** match the 
+the function it is returning from. If the result is not an error, the `?` operator unwraps the `Result` or `Option` automatically
 for you. This technique can simplify the error handling code in Rust.
 
 ### Simple Parsing Expression Exercise
@@ -164,7 +181,7 @@ Can you figure out how to compute the correct answer to expression given the ope
 Start by creating a function called `parse_program`. It will take in a list of tokens and index marking where the parser is.
 It will return a return a `Result`, where `Result` can either be `Err` or it will be fine.
 ```
-fn parse\_program(tokens: &Vec<Tokens>, index: &mut usize) -> Result< (), Box<dyn Error>> {
+fn parse_program(tokens: &Vec<Tokens>, index: &mut usize) -> Result< (), Box<dyn Error>> {
     loop {
         let val = parse_function(tokens, index)?;
         match val {
@@ -194,7 +211,7 @@ enum CodeNode {
    Data,    // for putting function data.
 }
 
-fn parse\_function(tokens: &Vec<Token>, index: &mut usize) -> Result\<CodeNode, Box \< dyn Error\>\> {
+fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Box < dyn Error>> {
     
     match next(tokens, index) {
     None => {

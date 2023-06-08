@@ -198,6 +198,8 @@ _ => println!("...Etc."),
 
 ### Struct
 
+Documentation: [Structs](https://doc.rust-lang.org/book/ch05-00-structs.html)
+
 Structs are a grouping of variables together. Rust struct declarations are as follows:
 ```
 struct Vec3 {
@@ -205,6 +207,15 @@ struct Vec3 {
     y: float,
     z: float,
 }
+```
+
+You can initialize a struct as follows:
+```
+let vec3 = Vec3 {
+    x : 1.0,
+    y : 1.0,
+    z : 1.0,
+};
 ```
 
 ### Enum
@@ -509,7 +520,11 @@ testing framework that we will make use of.
 
 [Writing Tests in Rust](https://doc.rust-lang.org/book/ch11-01-writing-tests.html)
 
+[Assert](https://doc.rust-lang.org/std/macro.assert.html)
+
 A module is a way to split up code in Rust into hierarchical logical units and manage visibility between them. A module can contain functions, structs, other kinds of code, etc. 
+
+`assert!()` is a macro that  checks that a boolean expression returns `true`. If it is false, this triggers an error.
 
 ```
 #[cfg(test)]
