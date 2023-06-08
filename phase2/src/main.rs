@@ -165,6 +165,8 @@ fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
 
 // the <'a> is the "lifetimes" type annotations in Rust.
 //
+// this 'dead_code' macro is just to supress Rust's dead_code warning. This macro can be removed.
+#[allow(dead_code)]
 fn peek<'a>(tokens: &'a Vec<Token>, index: usize) -> Option<&'a Token> {
     if index < tokens.len() {
         return Some(&tokens[index])
@@ -181,6 +183,8 @@ fn peek_error<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box
     }
 }
 
+// this 'dead_code' macro is just to supress Rust's dead_code warning. This macro can be removed.
+#[allow(dead_code)]
 fn next<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Option<&'a Token> {
     if *index < tokens.len() {
         let ret = *index;
