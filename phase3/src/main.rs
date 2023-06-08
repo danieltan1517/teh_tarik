@@ -1,6 +1,7 @@
 use std::env;
 use std::fs;
 use std::error::Error;
+mod compiler;
 
 fn main() {
     // get commandline arguments.
@@ -47,7 +48,7 @@ fn main() {
     match parse_program(&tokens, &mut index) {
 
     Ok(generated_code) => {
-        println!("{}", generated_code);
+        compiler::compile_and_run(&generated_code);
     }
 
     Err(message) => {
@@ -542,11 +543,13 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
     }
 }
 
-// parsing an expression such as:
+// parsing a simple expression such as:
 // "a" (alone)
 // "a + b"
 // "a * b"
 // "a - b"
+// NOTE: this cannot parse "complex" expressions such as "a + b * c".
+// I leave "a + b * c" as an exercise for the student.
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression, Box<dyn Error>> {
     let mut expr = parse_term(tokens, index)?;
     let opcode = match peek_error(tokens, *index)? {
@@ -573,6 +576,7 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression
     return Ok(expr);
 }
 
+// a term is either a Number or an Identifier.
 fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression, Box<dyn Error>> {
     match next_error(tokens, index)? {
 

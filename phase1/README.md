@@ -130,6 +130,15 @@ let string: String = String::from("Dog");
 let string_ref: &str = &string;
 ```
 
+You can create a `String` through the `format!` macro.
+
+```
+let num1 = 50;
+let num2 = 100;
+let s: String = format!("{} + {} = {}", num1, num2, num1 + num2);
+println!("{}", s);
+```
+
 The following code above demonstrates how to convert between `&str` and `String` types.
 
 Rust allows someone to create substring references using `string_variable[start..end]`.
