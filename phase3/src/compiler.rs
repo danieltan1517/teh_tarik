@@ -2,8 +2,13 @@ pub fn compile_and_run(code: &str) {
     println!("Generated code:");
     println!("{code}");
     let tokens = lex_ir(code);
-    for t in &tokens {
-        println!("{:?}", t);
+    match parse_ir(&tokens, &mut 0) {
+    Some(_) => {
+        println!("Good.");
+    }
+    None => {
+        println!("Error.");
+    }
     }
 }
 
@@ -22,6 +27,192 @@ fn lex_ir(mut code: &str) -> Vec<IRTok> {
     }
 
     return tokens;
+}
+
+fn parse_ir(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
+    if !matches!(next(tokens, idx)?, IRTok::Func) {
+        return None;
+    }
+
+    let _func_ident = match next(tokens, idx)? {
+    IRTok::Var(func_ident) => func_ident,
+    _ => return None,
+    };
+
+    if !matches!(next(tokens, idx)?, IRTok::EndInstr) {
+        return None;
+    }
+
+    loop {
+
+        parse_instruction(tokens, idx)?;
+
+    }
+}
+
+fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
+    match peek(tokens, *idx)? {
+
+    // declarations.
+    IRTok::Int => {
+        *idx += 1;
+        let ident = match next(tokens, idx)? {
+        IRTok::Var(ident) => ident,
+        _ => return None,
+        };
+
+        if !matches!(next(tokens, idx)?, IRTok::EndInstr) {
+            return None;
+        }
+
+        return Some(());
+    }
+
+    IRTok::IntArray => {
+        *idx += 1;
+        let ident = match next(tokens, idx)? {
+        IRTok::Var(ident) => ident,
+        _ => return None,
+        };
+
+        if !matches!(next(tokens, idx)?, IRTok::Comma) {
+            return None;
+        }
+
+        let num = match next(tokens, idx)? {
+        IRTok::Num(num) => num,
+        _ => return None,
+        };
+
+        return Some(());
+    }
+
+    // function calling routines.
+    IRTok::Call => {
+        *idx += 1;
+        todo!()
+    }
+
+    IRTok::Return => {
+        *idx += 1;
+        match next(tokens, idx)? {
+        IRTok::Num(num) => todo!(),
+        IRTok::Var(ident) => todo!(),
+        _ => return None,
+        };
+
+        return Some(());
+    }
+
+    // input/output routines.
+    IRTok::Out => {
+        *idx += 1;
+        match next(tokens, idx)? {
+        IRTok::Var(ident) => todo!(),
+        _ => return None,
+        };
+    }
+
+    IRTok::In => {
+        *idx += 1;
+        match next(tokens, idx)? {
+        IRTok::Var(ident) => todo!(),
+        _ => return None,
+        };
+    }
+
+    // mathematical operators.
+    IRTok::Mov => {
+        *idx += 1;
+
+    }
+
+    IRTok::Add => {
+        *idx += 1;
+
+    }
+
+    IRTok::Sub => {
+        *idx += 1;
+    }
+
+    IRTok::Mult => {
+        *idx += 1;
+    }
+
+    IRTok::Div => {
+        *idx += 1;
+    }
+
+    IRTok::Mod => {
+        *idx += 1;
+    }
+
+    // comparison operators.
+    IRTok::LessThan => {
+        *idx += 1;
+    }
+
+    IRTok::LessEqual => {
+        *idx += 1;
+    }
+
+    IRTok::NotEqual => {
+        *idx += 1;
+    }
+
+    IRTok::Equal => {
+        *idx += 1;
+    }
+
+    IRTok::GreaterEqual => {
+        *idx += 1;
+    }
+
+    IRTok::GreaterThan => {
+        *idx += 1;
+    }
+
+    // labels/branching
+    //Label,
+    IRTok::Jump => {
+        *idx += 1;
+    }
+
+    IRTok::BranchIf => {
+        *idx += 1;
+    }
+
+    IRTok::BranchIfNot => {
+        *idx += 1;
+    }
+
+    _ => {
+        return None;
+    }
+
+    }
+
+    todo!()
+}
+
+fn peek<'a>(tokens: &'a Vec<IRTok>, index: usize) -> Option<&'a IRTok> {
+    if index < tokens.len() {
+        return Some(&tokens[index])
+    } else {
+        return None
+    }
+}
+
+
+fn next<'a>(tokens: &'a Vec<IRTok>, index: &mut usize) -> Option<&'a IRTok> {
+    if *index < tokens.len() {
+        let ret = *index;
+        *index += 1;
+        return Some(&tokens[ret])
+    } else {
+        return None
+    }
 }
 
 fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
@@ -298,7 +489,7 @@ enum IRTok {
     GreaterThan,
 
     // labels/branching
-    Label,
+    //Label,
     Jump,
     BranchIf,
     BranchIfNot,
