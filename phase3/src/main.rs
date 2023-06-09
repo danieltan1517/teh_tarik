@@ -568,7 +568,7 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression
     *index += 1;
     let m_expr = parse_term(tokens, index)?;
     let t = create_temp();
-    let instr = format!(". {}\n{opcode} {}, {}, {}\n", t, t, expr.name, m_expr.name);
+    let instr = format!("%int {}\n{opcode} {}, {}, {}; This is a comment.\n", t, t, expr.name, m_expr.name);
     expr.code += &m_expr.code;
     expr.code += &instr;
     expr.name = t;

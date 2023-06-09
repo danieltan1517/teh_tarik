@@ -1,4 +1,4 @@
-pub fn compile_and_run(mut code: &str) {
+pub fn compile_and_run(code: &str) {
     println!("Generated code:");
     println!("{code}");
     let tokens = lex_ir(code);
@@ -57,7 +57,13 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
         "%jmp" => Some(Jump),
         "%branch_if" => Some(BranchIf),
         "%branch_if_not" => Some(BranchIfNot),
-        _ => None,
+        _ => {
+            match s[1..].parse::<i32>() {
+            Ok(val) => Some(Num(val)),
+            Err(_) => None,
+            }
+        }
+
         }
     }
 
@@ -88,16 +94,20 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
             '[' => return (Some(IRTok::LBrace), &code[i + 1..]),
             ']' => return (Some(IRTok::RBrace), &code[i + 1..]),
             ';' => StateMachine::Comments,
-            'a'..='z'|'0'..='9'|'A'..='Z' => StateMachine::Ident,
-            _ => return (None, ""),
+            _ => StateMachine::Ident,
             }
         }
 
         StateMachine::Lit => {
-            if c.is_whitespace() || c == ',' {
+            if c == ',' || c == '\n' {
+                let tok = opcode(&code[..i]);
+                return (tok, &code[i..]);
+            }
+            if c.is_whitespace() {
                 let tok = opcode(&code[..i]);
                 return (tok, &code[i+1..]);
             }
+
             StateMachine::Lit
         }
 
@@ -110,7 +120,12 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
         }
 
         StateMachine::Ident => {
-            if c.is_whitespace() || c == ',' {
+            if c == ',' || c == ';' || c == '\n' {
+                let tok = IRTok::Var(String::from(&code[..i]));
+                return (Some(tok), &code[i..]);
+            }
+
+            if c.is_whitespace() {
                 let tok = IRTok::Var(String::from(&code[..i]));
                 return (Some(tok), &code[i+1..]);
             }
@@ -175,7 +190,6 @@ mod ir_tests {
 
         let code = "; This is a comment\n%mov";
         assert!(matches!(lex_ir(code), (Some(IRTok::EndInstr), "%mov")));
-
     }
 }
 
