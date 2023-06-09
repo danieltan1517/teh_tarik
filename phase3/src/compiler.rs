@@ -45,13 +45,23 @@ fn parse_ir(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
 
     loop {
 
-        parse_instruction(tokens, idx)?;
-
+        match parse_instruction(tokens, idx) {
+        Some(_) => {
+        }
+        None => break,
+        }
     }
+
+    if !matches!(next(tokens, idx)?, IRTok::EndFunc) {
+        return None;
+    }
+
+    return Some(());
 }
 
 fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
-    match peek(tokens, *idx)? {
+    let opcode = peek(tokens, *idx)?;
+    match opcode {
 
     // declarations.
     IRTok::Int => {
@@ -60,12 +70,6 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
         IRTok::Var(ident) => ident,
         _ => return None,
         };
-
-        if !matches!(next(tokens, idx)?, IRTok::EndInstr) {
-            return None;
-        }
-
-        return Some(());
     }
 
     IRTok::IntArray => {
@@ -83,8 +87,6 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
         IRTok::Num(num) => num,
         _ => return None,
         };
-
-        return Some(());
     }
 
     // function calling routines.
@@ -96,19 +98,17 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
     IRTok::Return => {
         *idx += 1;
         match next(tokens, idx)? {
-        IRTok::Num(num) => todo!(),
-        IRTok::Var(ident) => todo!(),
+        IRTok::Num(_) => {}
+        IRTok::Var(_) => {}
         _ => return None,
         };
-
-        return Some(());
     }
 
     // input/output routines.
     IRTok::Out => {
         *idx += 1;
         match next(tokens, idx)? {
-        IRTok::Var(ident) => todo!(),
+        IRTok::Var(_) => {}
         _ => return None,
         };
     }
@@ -116,7 +116,7 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
     IRTok::In => {
         *idx += 1;
         match next(tokens, idx)? {
-        IRTok::Var(ident) => todo!(),
+        IRTok::Var(_) => {}
         _ => return None,
         };
     }
@@ -124,53 +124,76 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
     // mathematical operators.
     IRTok::Mov => {
         *idx += 1;
-
+        match next(tokens, idx)? {
+        IRTok::Var(_) => {}
+        _ => return None,
+        }
+ 
+        if !matches!(next(tokens, idx)?, IRTok::Comma) {
+            return None;
+        }
+        
+        match next(tokens, idx)? {
+        IRTok::Var(_) => {}
+        IRTok::Num(_) => {}
+        _ => return None,
+        }
     }
 
     IRTok::Add => {
         *idx += 1;
-
+        addr_code3(tokens, idx)?;
     }
 
     IRTok::Sub => {
         *idx += 1;
+        addr_code3(tokens, idx)?;
     }
 
     IRTok::Mult => {
         *idx += 1;
+        addr_code3(tokens, idx)?;
     }
 
     IRTok::Div => {
         *idx += 1;
+        addr_code3(tokens, idx)?;
     }
 
     IRTok::Mod => {
         *idx += 1;
+        addr_code3(tokens, idx)?;
     }
 
     // comparison operators.
     IRTok::LessThan => {
         *idx += 1;
+        addr_code3(tokens, idx)?;
     }
 
     IRTok::LessEqual => {
         *idx += 1;
+        addr_code3(tokens, idx)?;
     }
 
     IRTok::NotEqual => {
         *idx += 1;
+        addr_code3(tokens, idx)?;
     }
 
     IRTok::Equal => {
         *idx += 1;
+        addr_code3(tokens, idx)?;
     }
 
     IRTok::GreaterEqual => {
         *idx += 1;
+        addr_code3(tokens, idx)?;
     }
 
     IRTok::GreaterThan => {
         *idx += 1;
+        addr_code3(tokens, idx)?;
     }
 
     // labels/branching
@@ -193,7 +216,40 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
 
     }
 
-    todo!()
+    if !matches!(next(tokens, idx)?, IRTok::EndInstr) {
+        return None;
+    }
+
+    return Some(());
+}
+
+fn addr_code3(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
+    match next(tokens, idx)? {
+    IRTok::Var(_) => {}
+    _ => return None,
+    }
+
+    if !matches!(next(tokens, idx)?, IRTok::Comma) {
+        return None;
+    }
+    
+    match next(tokens, idx)? {
+    IRTok::Var(_) => {}
+    IRTok::Num(_) => {}
+    _ => return None,
+    }
+
+    if !matches!(next(tokens, idx)?, IRTok::Comma) {
+        return None;
+    }
+
+    match next(tokens, idx)? {
+    IRTok::Var(_) => {}
+    IRTok::Num(_) => {}
+    _ => return None,
+    }
+
+    return Some(());
 }
 
 fn peek<'a>(tokens: &'a Vec<IRTok>, index: usize) -> Option<&'a IRTok> {
