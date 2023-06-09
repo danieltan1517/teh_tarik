@@ -591,7 +591,7 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression, Box<
     Token::Num(num) => {
         let expr = Expression {
             code : String::from(""),
-            name : format!("%{}", num),
+            name : format!("{}", num),
         };
         return Ok(expr);
     }

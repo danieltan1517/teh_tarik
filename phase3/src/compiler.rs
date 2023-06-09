@@ -17,6 +17,9 @@ fn lex_ir(mut code: &str) -> Vec<IRTok> {
         }
         code = rest;
     }
+    for t in &tokens {
+        println!("{:?}", t);
+    }
 
     return tokens;
 }
@@ -28,6 +31,7 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
         Initial,
         Lit,
         Ident,
+        Num,
         Comments,
     }
 
@@ -57,13 +61,15 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
         "%jmp" => Some(Jump),
         "%branch_if" => Some(BranchIf),
         "%branch_if_not" => Some(BranchIfNot),
-        _ => {
-            match s[1..].parse::<i32>() {
-            Ok(val) => Some(Num(val)),
-            Err(_) => None,
-            }
-        }
+        _ => None,
 
+        }
+    }
+
+    fn num_literal(s: &str) -> Option<IRTok> {
+        match s.parse::<i32>() {
+        Ok(val) => Some(IRTok::Num(val)),
+        Err(_) => None,
         }
     }
 
@@ -93,13 +99,14 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
             ',' => return (Some(IRTok::Comma), &code[i + 1..]),
             '[' => return (Some(IRTok::LBrace), &code[i + 1..]),
             ']' => return (Some(IRTok::RBrace), &code[i + 1..]),
+            '0'..='9' => StateMachine::Num,
             ';' => StateMachine::Comments,
             _ => StateMachine::Ident,
             }
         }
 
         StateMachine::Lit => {
-            if c == ',' || c == '\n' {
+            if c == ',' || c == '\n' || c == ';' {
                 let tok = opcode(&code[..i]);
                 return (tok, &code[i..]);
             }
@@ -120,7 +127,7 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
         }
 
         StateMachine::Ident => {
-            if c == ',' || c == ';' || c == '\n' {
+            if c == ',' || c == '\n' || c == '[' || c == ']' || c == ';' {
                 let tok = IRTok::Var(String::from(&code[..i]));
                 return (Some(tok), &code[i..]);
             }
@@ -131,6 +138,16 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
             }
 
             StateMachine::Ident
+        }
+
+        StateMachine::Num => {
+            if c >= '0' && c <= '9' {
+                StateMachine::Num
+            } else {
+                let tok = num_literal(&code[..i]);
+                return (tok, &code[i..]);
+            }
+
         }
         
         };
@@ -161,35 +178,87 @@ mod ir_tests {
     use crate::compiler::*;
 
     #[test]
-    fn ir_lexer() {
-        assert!(matches!(lex_ir("  %int"), (Some(IRTok::Int), _)));
-        assert!(matches!(lex_ir(" %int[]"), (Some(IRTok::IntArray), _)));
-        assert!(matches!(lex_ir("%call"), (Some(IRTok::Call), _)));
-        assert!(matches!(lex_ir("%ret"), (Some(IRTok::Return), _)));
-        assert!(matches!(lex_ir("%out"), (Some(IRTok::Out), _)));
-        assert!(matches!(lex_ir("   %in"), (Some(IRTok::In), _)));
-        assert!(matches!(lex_ir("%mov  "), (Some(IRTok::Mov), _)));
-        assert!(matches!(lex_ir("%add"), (Some(IRTok::Add), _)));
-        assert!(matches!(lex_ir("%sub"), (Some(IRTok::Sub), _)));
-        assert!(matches!(lex_ir("%mult"), (Some(IRTok::Mult), _)));
-        assert!(matches!(lex_ir("  %div"), (Some(IRTok::Div), _)));
-        assert!(matches!(lex_ir("%mod"), (Some(IRTok::Mod), _)));
-        assert!(matches!(lex_ir("%lt"), (Some(IRTok::LessThan), _)));
-        assert!(matches!(lex_ir("%le"), (Some(IRTok::LessEqual), _)));
-        assert!(matches!(lex_ir("%neq"), (Some(IRTok::NotEqual), _)));
-        assert!(matches!(lex_ir("%eq"), (Some(IRTok::Equal), _)));
-        assert!(matches!(lex_ir("%gt"), (Some(IRTok::GreaterThan), _)));
-        assert!(matches!(lex_ir("%ge"), (Some(IRTok::GreaterEqual), _)));
-        assert!(matches!(lex_ir("%jmp"), (Some(IRTok::Jump), _)));
-        assert!(matches!(lex_ir("%branch_if"), (Some(IRTok::BranchIf), _)));
-        assert!(matches!(lex_ir("%branch_if_not"), (Some(IRTok::BranchIfNot), _)));
-        assert!(matches!(lex_ir("[are"), (Some(IRTok::LBrace), "are")));
-        assert!(matches!(lex_ir("]are"), (Some(IRTok::RBrace), "are")));
-        assert!(matches!(lex_ir(",are"), (Some(IRTok::Comma), "are")));
-        assert!(matches!(lex_ir("%bad"), (None, _)));
+    fn ir_token() {
+        assert!(matches!(lex_ir_token("  %int"), (Some(IRTok::Int), _)));
+        assert!(matches!(lex_ir_token(" %int[]"), (Some(IRTok::IntArray), _)));
+        assert!(matches!(lex_ir_token("%call"), (Some(IRTok::Call), _)));
+        assert!(matches!(lex_ir_token("%ret"), (Some(IRTok::Return), _)));
+        assert!(matches!(lex_ir_token("%out"), (Some(IRTok::Out), _)));
+        assert!(matches!(lex_ir_token("   %in"), (Some(IRTok::In), _)));
+        assert!(matches!(lex_ir_token("%mov  "), (Some(IRTok::Mov), _)));
+        assert!(matches!(lex_ir_token("%add"), (Some(IRTok::Add), _)));
+        assert!(matches!(lex_ir_token("%sub"), (Some(IRTok::Sub), _)));
+        assert!(matches!(lex_ir_token("%mult"), (Some(IRTok::Mult), _)));
+        assert!(matches!(lex_ir_token("  %div"), (Some(IRTok::Div), _)));
+        assert!(matches!(lex_ir_token("%mod"), (Some(IRTok::Mod), _)));
+        assert!(matches!(lex_ir_token("%lt"), (Some(IRTok::LessThan), _)));
+        assert!(matches!(lex_ir_token("%le"), (Some(IRTok::LessEqual), _)));
+        assert!(matches!(lex_ir_token("%neq"), (Some(IRTok::NotEqual), _)));
+        assert!(matches!(lex_ir_token("%eq"), (Some(IRTok::Equal), _)));
+        assert!(matches!(lex_ir_token("%gt"), (Some(IRTok::GreaterThan), _)));
+        assert!(matches!(lex_ir_token("%ge"), (Some(IRTok::GreaterEqual), _)));
+        assert!(matches!(lex_ir_token("%jmp"), (Some(IRTok::Jump), _)));
+        assert!(matches!(lex_ir_token("%branch_if"), (Some(IRTok::BranchIf), _)));
+        assert!(matches!(lex_ir_token("%branch_if_not"), (Some(IRTok::BranchIfNot), _)));
+        assert!(matches!(lex_ir_token("[are"), (Some(IRTok::LBrace), "are")));
+        assert!(matches!(lex_ir_token("]are"), (Some(IRTok::RBrace), "are")));
+        assert!(matches!(lex_ir_token(",are"), (Some(IRTok::Comma), "are")));
+        assert!(matches!(lex_ir_token("%bad"), (None, _)));
 
         let code = "; This is a comment\n%mov";
-        assert!(matches!(lex_ir(code), (Some(IRTok::EndInstr), "%mov")));
+        assert!(matches!(lex_ir_token(code), (Some(IRTok::EndInstr), "%mov")));
+    }
+
+    #[test]
+    fn ir_lex() {
+        {
+            let toks = lex_ir("%add a, b, c\n");
+            assert!(toks.len() == 7);
+            assert!(matches!(toks[0], IRTok::Add));
+            assert!(matches!(toks[1], IRTok::Var(_)));
+            assert!(matches!(toks[2], IRTok::Comma));
+            assert!(matches!(toks[3], IRTok::Var(_)));
+            assert!(matches!(toks[4], IRTok::Comma));
+            assert!(matches!(toks[5], IRTok::Var(_)));
+            assert!(matches!(toks[6], IRTok::EndInstr));
+        }
+
+        {
+            let toks = lex_ir("%func main,,,\n");
+            assert!(toks.len() == 6);
+            assert!(matches!(toks[0], IRTok::Func));
+            assert!(matches!(toks[1], IRTok::Var(_)));
+            assert!(matches!(toks[2], IRTok::Comma));
+            assert!(matches!(toks[3], IRTok::Comma));
+            assert!(matches!(toks[4], IRTok::Comma));
+            assert!(matches!(toks[5], IRTok::EndInstr));
+        }
+
+        {
+            let toks = lex_ir("%func,main,,,\n");
+            assert!(toks.len() == 7);
+            assert!(matches!(toks[0], IRTok::Func));
+            assert!(matches!(toks[1], IRTok::Comma));
+            assert!(matches!(toks[2], IRTok::Var(_)));
+            assert!(matches!(toks[3], IRTok::Comma));
+            assert!(matches!(toks[4], IRTok::Comma));
+            assert!(matches!(toks[5], IRTok::Comma));
+            assert!(matches!(toks[6], IRTok::EndInstr));
+        }
+
+        {
+            let toks = lex_ir("%mov [arr, 0], 100\n");
+            assert!(toks.len() == 9);
+            assert!(matches!(toks[0], IRTok::Mov));
+            assert!(matches!(toks[1], IRTok::LBrace));
+            assert!(matches!(toks[2], IRTok::Var(_)));
+            assert!(matches!(toks[3], IRTok::Comma));
+            assert!(matches!(toks[4], IRTok::Num(0)));
+            assert!(matches!(toks[5], IRTok::RBrace));
+            assert!(matches!(toks[6], IRTok::Comma));
+            assert!(matches!(toks[7], IRTok::Num(100)));
+            assert!(matches!(toks[8], IRTok::EndInstr));
+        }
     }
 }
 
