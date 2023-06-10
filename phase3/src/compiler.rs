@@ -22,9 +22,6 @@ fn lex_ir(mut code: &str) -> Vec<IRTok> {
         }
         code = rest;
     }
-    for t in &tokens {
-        println!("{:?}", t);
-    }
 
     return tokens;
 }
@@ -46,7 +43,8 @@ fn parse_ir(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
     loop {
 
         match parse_instruction(tokens, idx) {
-        Some(_) => {
+        Some(bytecode) => {
+            println!("{:?}", bytecode);
         }
         None => break,
         }
@@ -71,7 +69,7 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<Bytecode> {
         IRTok::Var(ident) => ident,
         _ => return None,
         };
-        todo!();
+        bytecode = Bytecode::Int(Op::Var(0));
     }
 
     IRTok::IntArray => {
@@ -86,10 +84,10 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<Bytecode> {
         }
 
         let num = match next(tokens, idx)? {
-        IRTok::Num(num) => num,
+        IRTok::Num(num) => *num,
         _ => return None,
         };
-        todo!();
+        bytecode = Bytecode::IntArray(Op::Var(0), Op::Num(num));
     }
 
     // function calling routines.
@@ -111,40 +109,41 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<Bytecode> {
     // input/output routines.
     IRTok::Out => {
         *idx += 1;
-        match next(tokens, idx)? {
-        IRTok::Var(_) => {}
+        let src = match next(tokens, idx)? {
+        IRTok::Var(_) => Op::Var(0),
+        IRTok::Num(num) => Op::Num(*num),
         _ => return None,
         };
-        todo!();
+        bytecode = Bytecode::Out(src);
     }
 
     IRTok::In => {
         *idx += 1;
-        match next(tokens, idx)? {
-        IRTok::Var(_) => {}
+        let src = match next(tokens, idx)? {
+        IRTok::Var(_) => Op::Var(0),
         _ => return None,
         };
-        todo!();
+        bytecode = Bytecode::In(src);
     }
 
     // mathematical operators.
     IRTok::Mov => {
         *idx += 1;
-        match next(tokens, idx)? {
-        IRTok::Var(_) => {}
+        let dest = match next(tokens, idx)? {
+        IRTok::Var(_) => Op::Var(0),
         _ => return None,
-        }
+        };
  
         if !matches!(next(tokens, idx)?, IRTok::Comma) {
             return None;
         }
         
-        match next(tokens, idx)? {
-        IRTok::Var(_) => {}
-        IRTok::Num(_) => {}
+        let src = match next(tokens, idx)? {
+        IRTok::Var(_) => Op::Var(0),
+        IRTok::Num(num) => Op::Num(*num),
         _ => return None,
-        }
-        todo!();
+        };
+        bytecode = Bytecode::Mov(dest, src);
     }
 
     IRTok::Add => {
@@ -590,6 +589,10 @@ enum Op {
 
 #[derive(Debug)]
 enum Bytecode {
+
+    // declarations.
+    Int(Op),
+    IntArray(Op, Op),
 
     // input/output routines.
     Out(Op),
