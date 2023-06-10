@@ -56,6 +56,7 @@ run the generated IR.
 
 Generate code as a `String` in the function `parse_program`. If `parse_program` is successful, 
 call `compile_and_run` to compile and run the code. If `parse_program` fails, return an error.
+
 ```
 match parse_program(&tokens, &mut index) {
 
@@ -69,3 +70,15 @@ Err(e) => {
 
 }
 ```
+
+### Interpreter
+
+You can include the interpreter found in `compiler.rs` as part of your project. You do **not** need to make
+any modifications to the interpreter. You can make any change you want to the existing interpreter code.
+The interpreter code as found in `compiler.rs` should be sufficient enough to complete Phase 3 and 4.
+
+
+
+
+
+
