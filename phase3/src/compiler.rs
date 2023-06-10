@@ -10,6 +10,8 @@ pub fn compile_and_run(code: &str) {
         println!("Error.");
     }
     }
+
+    // todo: pass over everything. assign labels to the function.
 }
 
 fn lex_ir(mut code: &str) -> Vec<IRTok> {
@@ -280,7 +282,6 @@ fn peek<'a>(tokens: &'a Vec<IRTok>, index: usize) -> Option<&'a IRTok> {
         return None
     }
 }
-
 
 fn next<'a>(tokens: &'a Vec<IRTok>, index: &mut usize) -> Option<&'a IRTok> {
     if *index < tokens.len() {
