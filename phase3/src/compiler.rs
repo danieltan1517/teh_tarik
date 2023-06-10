@@ -59,7 +59,8 @@ fn parse_ir(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
     return Some(());
 }
 
-fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
+fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<Bytecode> {
+    let bytecode: Bytecode;
     let opcode = peek(tokens, *idx)?;
     match opcode {
 
@@ -70,6 +71,7 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
         IRTok::Var(ident) => ident,
         _ => return None,
         };
+        todo!();
     }
 
     IRTok::IntArray => {
@@ -87,6 +89,7 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
         IRTok::Num(num) => num,
         _ => return None,
         };
+        todo!();
     }
 
     // function calling routines.
@@ -102,6 +105,7 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
         IRTok::Var(_) => {}
         _ => return None,
         };
+        todo!();
     }
 
     // input/output routines.
@@ -111,6 +115,7 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
         IRTok::Var(_) => {}
         _ => return None,
         };
+        todo!();
     }
 
     IRTok::In => {
@@ -119,6 +124,7 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
         IRTok::Var(_) => {}
         _ => return None,
         };
+        todo!();
     }
 
     // mathematical operators.
@@ -138,76 +144,92 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
         IRTok::Num(_) => {}
         _ => return None,
         }
+        todo!();
     }
 
     IRTok::Add => {
         *idx += 1;
-        addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        bytecode = Bytecode::Add(dest, src1, src2);
     }
 
     IRTok::Sub => {
         *idx += 1;
-        addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        bytecode = Bytecode::Sub(dest, src1, src2);
     }
 
     IRTok::Mult => {
         *idx += 1;
-        addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        bytecode = Bytecode::Mult(dest, src1, src2);
     }
 
     IRTok::Div => {
         *idx += 1;
-        addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        bytecode = Bytecode::Div(dest, src1, src2);
     }
 
     IRTok::Mod => {
         *idx += 1;
-        addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        bytecode = Bytecode::Mod(dest, src1, src2);
     }
 
     // comparison operators.
     IRTok::LessThan => {
         *idx += 1;
-        addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        bytecode = Bytecode::LessThan(dest, src1, src2);
     }
 
     IRTok::LessEqual => {
         *idx += 1;
-        addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        bytecode = Bytecode::LessEqual(dest, src1, src2);
     }
 
     IRTok::NotEqual => {
         *idx += 1;
-        addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        bytecode = Bytecode::NotEqual(dest, src1, src2);
     }
 
     IRTok::Equal => {
         *idx += 1;
-        addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        bytecode = Bytecode::Equal(dest, src1, src2);
     }
 
     IRTok::GreaterEqual => {
         *idx += 1;
-        addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        bytecode = Bytecode::GreaterEqual(dest, src1, src2);
     }
 
     IRTok::GreaterThan => {
         *idx += 1;
         addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        bytecode = Bytecode::GreaterThan(dest, src1, src2);
     }
 
     // labels/branching
     //Label,
     IRTok::Jump => {
         *idx += 1;
+        todo!();
     }
 
     IRTok::BranchIf => {
         *idx += 1;
+        todo!();
     }
 
     IRTok::BranchIfNot => {
         *idx += 1;
+        todo!();
     }
 
     _ => {
@@ -220,36 +242,36 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
         return None;
     }
 
-    return Some(());
+    return Some(bytecode);
 }
 
-fn addr_code3(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
-    match next(tokens, idx)? {
-    IRTok::Var(_) => {}
+fn addr_code3(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<(Op, Op, Op)> {
+    let dest = match next(tokens, idx)? {
+    IRTok::Var(_) => Op::Var(0),
     _ => return None,
-    }
+    };
 
     if !matches!(next(tokens, idx)?, IRTok::Comma) {
         return None;
     }
     
-    match next(tokens, idx)? {
-    IRTok::Var(_) => {}
-    IRTok::Num(_) => {}
+    let src1 = match next(tokens, idx)? {
+    IRTok::Var(_) => Op::Var(0),
+    IRTok::Num(num) => Op::Num(*num),
     _ => return None,
-    }
+    };
 
     if !matches!(next(tokens, idx)?, IRTok::Comma) {
         return None;
     }
 
-    match next(tokens, idx)? {
-    IRTok::Var(_) => {}
-    IRTok::Num(_) => {}
+    let src2 = match next(tokens, idx)? {
+    IRTok::Var(_) => Op::Var(0),
+    IRTok::Num(num) => Op::Num(*num),
     _ => return None,
-    }
+    };
 
-    return Some(());
+    return Some((dest, src1, src2));
 }
 
 fn peek<'a>(tokens: &'a Vec<IRTok>, index: usize) -> Option<&'a IRTok> {
@@ -559,4 +581,35 @@ enum IRTok {
     Num(i32),
     Var(String),
 }
+
+#[derive(Debug)]
+enum Op {
+    Num(i32),
+    Var(i32),
+}
+
+#[derive(Debug)]
+enum Bytecode {
+
+    // input/output routines.
+    Out(Op),
+    In(Op),
+
+    // mathematical operators.
+    Mov(Op, Op),
+    Add(Op, Op, Op),
+    Sub(Op, Op, Op),
+    Mult(Op, Op, Op),
+    Div(Op, Op, Op),
+    Mod(Op, Op, Op),
+
+    // comparison operators.
+    LessThan(Op, Op, Op),
+    LessEqual(Op, Op, Op),
+    NotEqual(Op, Op, Op),
+    Equal(Op, Op, Op),
+    GreaterEqual(Op, Op, Op),
+    GreaterThan(Op, Op, Op),
+}
+
 
