@@ -3,12 +3,14 @@ pub fn compile_and_run(code: &str) {
     println!("{code}");
     let tokens = lex_ir(code);
     match parse_ir(&tokens, &mut 0) {
-    Some(_) => {
+    Ok(_) => {
         println!("Good.");
     }
-    None => {
-        println!("Error.");
+
+    Err(e) => {
+        println!("Error.{e}");
     }
+
     }
 
     // todo: pass over everything. assign labels to the function.
@@ -28,68 +30,124 @@ fn lex_ir(mut code: &str) -> Vec<IRTok> {
     return tokens;
 }
 
-fn parse_ir(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<()> {
-    if !matches!(next(tokens, idx)?, IRTok::Func) {
-        return None;
-    }
-
-    let _func_ident = match next(tokens, idx)? {
-    IRTok::Var(func_ident) => func_ident,
-    _ => return None,
+fn parse_ir(tokens: &Vec<IRTok>, idx: &mut usize) -> Result<(), Box<dyn Error>> {
+    let mut function_bytecode = FunctionBytecode {
+        name:String::from(""),
+        id:0,
+        variables: HashMap::new(),
     };
 
-    if !matches!(next(tokens, idx)?, IRTok::EndInstr) {
-        return None;
+    if !matches!(next_result(tokens, idx)?, IRTok::Func) {
+        return Err(Box::from("func IR needs to begin with '%func'"));
+    }
+
+    match next_result(tokens, idx)? {
+    IRTok::Var(func_ident) => {
+        function_bytecode.name = func_ident.clone();
+    }
+
+    _ => return Err(Box::from("func IR must have an identifier name such as '%func main'")),
+
+    };
+
+    if !matches!(next_result(tokens, idx)?, IRTok::EndInstr) {
+        return Err(Box::from("%func header must end with a newline"));
     }
 
     loop {
-
-        match parse_instruction(tokens, idx) {
-        Some(bytecode) => {
-            println!("{:?}", bytecode);
-        }
-        None => break,
+        let bytecode = parse_instruction(&mut function_bytecode, tokens, idx)?;
+        println!("{:?}", bytecode);
+        if matches!(bytecode, Bytecode::End) {
+            break;
         }
     }
 
-    if !matches!(next(tokens, idx)?, IRTok::EndFunc) {
-        return None;
+    if !matches!(next_result(tokens, idx)?, IRTok::EndFunc) {
+        return Err(Box::from("func IR needs to end in '%endfunc'"));
     }
 
-    return Some(());
+    return Ok(());
 }
 
-fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<Bytecode> {
+use std::collections::HashMap;
+use std::error::Error;
+
+struct FunctionBytecode {
+    name: String,
+    id: i32,
+    variables: HashMap<String, VariableType>,
+}
+
+fn get_id(function: &mut FunctionBytecode) -> i32 {
+    let id = function.id;
+    function.id += 1;
+    id
+}
+
+fn lookup_integer_variable_id(function: &FunctionBytecode, ident: &String) -> Result<Op, Box<dyn Error>> {
+    if let Some(id) = function.variables.get(ident) {
+         match id {
+         VariableType::IntVar(id) => Ok(Op::Var(*id)),
+
+         VariableType::ArrayVar(_,_) => {
+             let f = format!("invalid operand. {} is an array, not an integer.", ident);
+             return Err(Box::from(f));
+         }
+
+         }
+    } else {
+         let f = format!("invalid instruction. identifier '{}' has not been declared.", ident);
+         return Err(Box::from(f));
+    }
+}
+
+fn parse_instruction(function: &mut FunctionBytecode, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<Bytecode, Box<dyn Error>> {
     let bytecode: Bytecode;
-    let opcode = peek(tokens, *idx)?;
+    let opcode = peek_result(tokens, *idx)?;
     match opcode {
 
     // declarations.
     IRTok::Int => {
         *idx += 1;
-        let ident = match next(tokens, idx)? {
+        let ident = match next_result(tokens, idx)? {
         IRTok::Var(ident) => ident,
-        _ => return None,
+        _ => return Err(Box::from("invalid instruction. expected identifier like '%int variable'")),
         };
-        bytecode = Bytecode::Int(Op::Var(0));
+
+        if let Some(_) = function.variables.get(ident) {
+             let f = format!("invalid instruction. identifier '{}' declared too many times", ident);
+             return Err(Box::from(f));
+        } else {
+             let id = get_id(function);
+             function.variables.insert(ident.clone(), VariableType::IntVar(id));
+             bytecode = Bytecode::Int(Op::Var(id));
+        }
     }
 
     IRTok::IntArray => {
         *idx += 1;
-        let ident = match next(tokens, idx)? {
+        let ident = match next_result(tokens, idx)? {
         IRTok::Var(ident) => ident,
-        _ => return None,
+        _ => return Err(Box::from("invalid instruction. expected format like '%int[] array, 10'")),
         };
 
-        if !matches!(next(tokens, idx)?, IRTok::Comma) {
-            return None;
+        if !matches!(next_result(tokens, idx)?, IRTok::Comma) {
+            return Err(Box::from("invalid instruction. expected format like '%int[] array, 10'"));
         }
 
-        let num = match next(tokens, idx)? {
+        let num = match next_result(tokens, idx)? {
         IRTok::Num(num) => *num,
-        _ => return None,
+        _ => return Err(Box::from("invalid instruction. expected format like '%int[] array, 10'")),
         };
-        bytecode = Bytecode::IntArray(Op::Var(0), Op::Num(num));
+
+        if let Some(_) = function.variables.get(ident) {
+             let f = format!("invalid instruction. identifier '{}' declared too many times", ident);
+             return Err(Box::from(f));
+        } else {
+             let id = get_id(function);
+             function.variables.insert(ident.clone(), VariableType::ArrayVar(id, num));
+             bytecode = Bytecode::IntArray(Op::Var(id), Op::Num(num));
+        }
     }
 
     // function calling routines.
@@ -100,30 +158,30 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<Bytecode> {
 
     IRTok::Return => {
         *idx += 1;
-        match next(tokens, idx)? {
-        IRTok::Num(_) => {}
-        IRTok::Var(_) => {}
-        _ => return None,
+        let op = match next_result(tokens, idx)? {
+        IRTok::Var(ident) => lookup_integer_variable_id(function, ident)?,
+        IRTok::Num(num) => Op::Num(*num),
+        _ => return Err(Box::from("invalid instruction. expected format like '%ret variable'")),
         };
-        todo!();
+        bytecode = Bytecode::Return(op);
     }
 
     // input/output routines.
     IRTok::Out => {
         *idx += 1;
-        let src = match next(tokens, idx)? {
-        IRTok::Var(_) => Op::Var(0),
+        let src = match next_result(tokens, idx)? {
+        IRTok::Var(ident) => lookup_integer_variable_id(function, ident)?,
         IRTok::Num(num) => Op::Num(*num),
-        _ => return None,
+        _ => return Err(Box::from("invalid instruction. expected format like '%out variable'")),
         };
         bytecode = Bytecode::Out(src);
     }
 
     IRTok::In => {
         *idx += 1;
-        let src = match next(tokens, idx)? {
-        IRTok::Var(_) => Op::Var(0),
-        _ => return None,
+        let src = match next_result(tokens, idx)? {
+        IRTok::Var(ident) => lookup_integer_variable_id(function, ident)?,
+        _ => return Err(Box::from("invalid instruction. expected format like '%in variable'")),
         };
         bytecode = Bytecode::In(src);
     }
@@ -131,88 +189,102 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<Bytecode> {
     // mathematical operators.
     IRTok::Mov => {
         *idx += 1;
-        let dest = match next(tokens, idx)? {
-        IRTok::Var(_) => Op::Var(0),
-        _ => return None,
+        let dest = match next_result(tokens, idx)? {
+        IRTok::Var(ident) => lookup_integer_variable_id(function, ident)?,
+        _ => return Err(Box::from("invalid instruction. expected format like '%mov variable, 10'")),
         };
  
-        if !matches!(next(tokens, idx)?, IRTok::Comma) {
-            return None;
+        if !matches!(next_result(tokens, idx)?, IRTok::Comma) {
+            return Err(Box::from("invalid instruction. missing comma. expected format like '%mov variable, 10'"));
         }
         
-        let src = match next(tokens, idx)? {
-        IRTok::Var(_) => Op::Var(0),
+        let src = match next_result(tokens, idx)? {
+        IRTok::Var(ident) => {
+            if let Some(id) = function.variables.get(ident) {
+                 match id {
+                 VariableType::IntVar(id) => Op::Var(*id),
+
+                 VariableType::ArrayVar(_,_) => {
+                     let f = format!("invalid '%mov' statement. {} is an array, not an integer.", ident);
+                     return Err(Box::from(f));
+                 }
+
+                 }
+            } else {
+                 let f = format!("invalid instruction. identifier '{}' declared too many times", ident);
+                 return Err(Box::from(f));
+            }
+        }
         IRTok::Num(num) => Op::Num(*num),
-        _ => return None,
+        _ => return Err(Box::from("invalid instruction. expected format like '%mov variable, 10'")),
         };
         bytecode = Bytecode::Mov(dest, src);
     }
 
     IRTok::Add => {
         *idx += 1;
-        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(function, tokens, idx)?;
         bytecode = Bytecode::Add(dest, src1, src2);
     }
 
     IRTok::Sub => {
         *idx += 1;
-        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(function, tokens, idx)?;
         bytecode = Bytecode::Sub(dest, src1, src2);
     }
 
     IRTok::Mult => {
         *idx += 1;
-        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(function, tokens, idx)?;
         bytecode = Bytecode::Mult(dest, src1, src2);
     }
 
     IRTok::Div => {
         *idx += 1;
-        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(function, tokens, idx)?;
         bytecode = Bytecode::Div(dest, src1, src2);
     }
 
     IRTok::Mod => {
         *idx += 1;
-        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(function, tokens, idx)?;
         bytecode = Bytecode::Mod(dest, src1, src2);
     }
 
     // comparison operators.
     IRTok::LessThan => {
         *idx += 1;
-        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(function, tokens, idx)?;
         bytecode = Bytecode::LessThan(dest, src1, src2);
     }
 
     IRTok::LessEqual => {
         *idx += 1;
-        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(function, tokens, idx)?;
         bytecode = Bytecode::LessEqual(dest, src1, src2);
     }
 
     IRTok::NotEqual => {
         *idx += 1;
-        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(function, tokens, idx)?;
         bytecode = Bytecode::NotEqual(dest, src1, src2);
     }
 
     IRTok::Equal => {
         *idx += 1;
-        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(function, tokens, idx)?;
         bytecode = Bytecode::Equal(dest, src1, src2);
     }
 
     IRTok::GreaterEqual => {
         *idx += 1;
-        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(function, tokens, idx)?;
         bytecode = Bytecode::GreaterEqual(dest, src1, src2);
     }
 
     IRTok::GreaterThan => {
         *idx += 1;
-        addr_code3(tokens, idx)?;
-        let (dest, src1, src2) = addr_code3(tokens, idx)?;
+        let (dest, src1, src2) = addr_code3(function, tokens, idx)?;
         bytecode = Bytecode::GreaterThan(dest, src1, src2);
     }
 
@@ -233,46 +305,51 @@ fn parse_instruction(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<Bytecode> {
         todo!();
     }
 
+    IRTok::EndFunc => {
+        bytecode = Bytecode::End;
+        return Ok(bytecode);
+    }
+
     _ => {
-        return None;
+        return Err(Box::from("invalid instruction."));
     }
 
     }
 
-    if !matches!(next(tokens, idx)?, IRTok::EndInstr) {
-        return None;
+    if !matches!(next_result(tokens, idx)?, IRTok::EndInstr) {
+        return Err(Box::from("expected newline."));
     }
 
-    return Some(bytecode);
+    return Ok(bytecode);
 }
 
-fn addr_code3(tokens: &Vec<IRTok>, idx: &mut usize) -> Option<(Op, Op, Op)> {
-    let dest = match next(tokens, idx)? {
-    IRTok::Var(_) => Op::Var(0),
-    _ => return None,
+fn addr_code3(function: &FunctionBytecode, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<(Op, Op, Op), Box<dyn Error>> {
+    let dest = match next_result(tokens, idx)? {
+    IRTok::Var(ident) => lookup_integer_variable_id(function, ident)?,
+    _ => return Err(Box::from("invalid dest.")),
     };
 
-    if !matches!(next(tokens, idx)?, IRTok::Comma) {
-        return None;
+    if !matches!(next_result(tokens, idx)?, IRTok::Comma) {
+        return Err(Box::from("invalid 3-address code. expected comma."));
     }
     
-    let src1 = match next(tokens, idx)? {
-    IRTok::Var(_) => Op::Var(0),
+    let src1 = match next_result(tokens, idx)? {
+    IRTok::Var(ident) => lookup_integer_variable_id(function, ident)?,
     IRTok::Num(num) => Op::Num(*num),
-    _ => return None,
+    _ => return Err(Box::from("invalid src1.")),
     };
 
-    if !matches!(next(tokens, idx)?, IRTok::Comma) {
-        return None;
+    if !matches!(next_result(tokens, idx)?, IRTok::Comma) {
+        return Err(Box::from("invalid 3-address code. expected comma."));
     }
 
-    let src2 = match next(tokens, idx)? {
-    IRTok::Var(_) => Op::Var(0),
+    let src2 = match next_result(tokens, idx)? {
+    IRTok::Var(ident) => lookup_integer_variable_id(function, ident)?,
     IRTok::Num(num) => Op::Num(*num),
-    _ => return None,
+    _ => return Err(Box::from("invalid src2.")),
     };
 
-    return Some((dest, src1, src2));
+    return Ok((dest, src1, src2));
 }
 
 fn peek<'a>(tokens: &'a Vec<IRTok>, index: usize) -> Option<&'a IRTok> {
@@ -290,6 +367,24 @@ fn next<'a>(tokens: &'a Vec<IRTok>, index: &mut usize) -> Option<&'a IRTok> {
         return Some(&tokens[ret])
     } else {
         return None
+    }
+}
+
+fn peek_result<'a>(tokens: &'a Vec<IRTok>, index: usize) -> Result<&'a IRTok, Box<dyn Error>> {
+    if index < tokens.len() {
+        return Ok(&tokens[index])
+    } else {
+        return Err(Box::from("unexpected end."))
+    }
+}
+
+fn next_result<'a>(tokens: &'a Vec<IRTok>, index: &mut usize) -> Result<&'a IRTok, Box<dyn Error>> {
+    if *index < tokens.len() {
+        let ret = *index;
+        *index += 1;
+        return Ok(&tokens[ret])
+    } else {
+        return Err(Box::from("unexpected end."))
     }
 }
 
@@ -589,7 +684,16 @@ enum Op {
 }
 
 #[derive(Debug)]
+enum VariableType {
+    IntVar(i32),
+    ArrayVar(i32, i32),
+}
+
+#[derive(Debug)]
 enum Bytecode {
+
+    // EndFunc
+    End,
 
     // declarations.
     Int(Op),
@@ -614,6 +718,7 @@ enum Bytecode {
     Equal(Op, Op, Op),
     GreaterEqual(Op, Op, Op),
     GreaterThan(Op, Op, Op),
+    Return(Op),
 }
 
 
