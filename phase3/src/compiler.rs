@@ -13,8 +13,11 @@ pub fn compile_and_run(code: &str) {
 
     };
 
-    run_bytecode(&bytecode);
+    let stdin = io::stdin();
+    run_bytecode(&stdin, &bytecode);
 }
+
+use std::io;
 
 fn lex_ir(mut code: &str) -> Vec<IRTok> {
     let mut tokens: Vec<IRTok> = vec![];
@@ -94,7 +97,7 @@ fn read_integer_value(variables: &HashMap<i32, i32>, op: &Op) -> i32 {
     }
 }
 
-fn run_bytecode(function: &FunctionBytecode) {
+fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode) {
     let mut variables: HashMap<i32, i32> = HashMap::new();
     let mut arrays: HashMap<i32, Vec<i32>> = HashMap::new();
 
@@ -141,6 +144,38 @@ fn run_bytecode(function: &FunctionBytecode) {
         Bytecode::Out(value) => {
             let num = read_integer_value(&variables, value);
             println!("{}", num);
+            instr_pointer += 1;
+        }
+
+        Bytecode::In(Op::Var(id)) => {
+            let mut buf = String::with_capacity(64);
+            loop {
+                match stdin.read_line(&mut buf) {
+                Ok(_) => {
+                     let token = buf.trim_end();
+                     match token.parse::<i32>() {
+                     Ok(num) => {
+                          let dest = variables.get_mut(id).unwrap();
+                          *dest = num;
+                          break;
+                     }
+
+                     Err(_) => {
+                         println!("User Input Error. '{}' is not a valid number.", token);
+                         buf.clear();
+                     }
+
+                     }
+                }
+
+                Err(e) => {
+                     println!("Error. Failed to read from standard input correctly.");
+                     println!("{e}");
+                     println!("Please try again.");
+                }
+
+                }
+            }
             instr_pointer += 1;
         }
 
