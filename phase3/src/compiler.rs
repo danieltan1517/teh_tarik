@@ -403,36 +403,40 @@ fn parse_instruction(function: &mut FunctionBytecode, tokens: &Vec<IRTok>, idx: 
     // mathematical operators.
     IRTok::Mov => {
         *idx += 1;
-        let dest = match next_result(tokens, idx)? {
-        IRTok::Var(ident) => lookup_integer_variable_id(function, ident)?,
+        match next_result(tokens, idx)? {
+        IRTok::Var(ident) => {
+            let dest = lookup_integer_variable_id(function, ident)?;
+
+            if !matches!(next_result(tokens, idx)?, IRTok::Comma) {
+                return Err(Box::from("invalid instruction. missing comma. expected format like '%mov variable, 10'"));
+            }
+            
+            let src = match next_result(tokens, idx)? {
+            IRTok::Var(ident) => {
+                if let Some(id) = function.variables.get(ident) {
+                     match id {
+                     VariableType::IntVar(id) => Op::Var(*id),
+         
+                     VariableType::ArrayVar(_,_) => {
+                         let f = format!("invalid '%mov' statement. {} is an array, not an integer.", ident);
+                         return Err(Box::from(f));
+                     }
+         
+                     }
+                } else {
+                     let f = format!("invalid instruction. identifier '{}' declared too many times", ident);
+                     return Err(Box::from(f));
+                }
+            }
+            IRTok::Num(num) => Op::Num(*num),
+            _ => return Err(Box::from("invalid instruction. expected format like '%mov variable, 10'")),
+            };
+            bytecode = Bytecode::Mov(dest, src);
+        }
+
         _ => return Err(Box::from("invalid instruction. expected format like '%mov variable, 10'")),
         };
  
-        if !matches!(next_result(tokens, idx)?, IRTok::Comma) {
-            return Err(Box::from("invalid instruction. missing comma. expected format like '%mov variable, 10'"));
-        }
-        
-        let src = match next_result(tokens, idx)? {
-        IRTok::Var(ident) => {
-            if let Some(id) = function.variables.get(ident) {
-                 match id {
-                 VariableType::IntVar(id) => Op::Var(*id),
-
-                 VariableType::ArrayVar(_,_) => {
-                     let f = format!("invalid '%mov' statement. {} is an array, not an integer.", ident);
-                     return Err(Box::from(f));
-                 }
-
-                 }
-            } else {
-                 let f = format!("invalid instruction. identifier '{}' declared too many times", ident);
-                 return Err(Box::from(f));
-            }
-        }
-        IRTok::Num(num) => Op::Num(*num),
-        _ => return Err(Box::from("invalid instruction. expected format like '%mov variable, 10'")),
-        };
-        bytecode = Bytecode::Mov(dest, src);
     }
 
     IRTok::Add => {
