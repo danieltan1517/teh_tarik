@@ -434,8 +434,31 @@ fn parse_instruction(function: &mut FunctionBytecode, tokens: &Vec<IRTok>, idx: 
             bytecode = Bytecode::Mov(dest, src);
         }
 
+        IRTok::LBrace => {
+            let ident = match next_result(tokens, idx)? {
+            IRTok::Var(ident) => ident,
+            _ => return Err(Box::from("invalid instruction. expected format like '%mov [array + 10], 10")),
+            };
+
+            if !matches!(next_result(tokens, idx)?, IRTok::Plus) {
+                return Err(Box::from("invalid instruction. expected format like '%mov [array + 10], 10"));
+            }
+
+            match next_result(tokens, idx)? {
+            IRTok::Var(_) => {}
+            IRTok::Num(_) => {}
+            _ => return Err(Box::from("invalid instruction. expected format like '%mov [array + 10], 10")),
+            }
+
+            if !matches!(next_result(tokens, idx)?, IRTok::RBrace) {
+                return Err(Box::from("invalid instruction. expected format like '%mov [array + 10], 10"));
+            }
+
+            todo!()
+        }
+
         _ => return Err(Box::from("invalid instruction. expected format like '%mov variable, 10'")),
-        };
+        }
  
     }
 
@@ -681,6 +704,7 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
             '%' => StateMachine::Lit,
             ',' => return (Some(IRTok::Comma), &code[i + 1..]),
             '[' => return (Some(IRTok::LBrace), &code[i + 1..]),
+            '+' => return (Some(IRTok::Plus), &code[i + 1..]),
             ']' => return (Some(IRTok::RBrace), &code[i + 1..]),
             '0'..='9' => StateMachine::Num,
             ';' => StateMachine::Comments,
@@ -889,6 +913,7 @@ enum IRTok {
     Comma,
     LBrace,
     RBrace,
+    Plus,
 
     EndInstr,
 
