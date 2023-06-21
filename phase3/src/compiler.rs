@@ -41,8 +41,17 @@ fn parse_ir(tokens: &Vec<IRTok>, idx: &mut usize) -> Result<FunctionBytecode, Bo
         body: vec![],
     };
 
-    if !matches!(next_result(tokens, idx)?, IRTok::Func) {
-        return Err(Box::from("func IR needs to begin with '%func'"));
+    match next(tokens, idx) {
+    Some(token) => {
+        if !matches!(token, IRTok::Func) {
+            return Err(Box::from("func IR needs to begin with '%func'"));
+        }
+    }
+
+    None => {
+        return Ok(function_bytecode);
+    }
+
     }
 
     match next_result(tokens, idx)? {
@@ -179,14 +188,22 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode) {
             instr_pointer += 1;
         }
 
-        Bytecode::Mov(Op::Var(dest), src) => {
-            let num = read_integer_value(&variables, src);
+        Bytecode::Mov(MemWrite::IntVar(dest), src) => {
+            let num = read_memory(&variables, &arrays, src);
             let dest = variables.get_mut(dest).unwrap();
             *dest = num;
             instr_pointer += 1;
         }
 
-        Bytecode::Add(Op::Var(dest), src1, src2) => {
+        Bytecode::Mov(MemWrite::ArrayWrite(dest, index), src) => {
+            let num = read_memory(&variables, &arrays, src);
+            let dest = arrays.get_mut(dest).unwrap();
+            let i = read_integer_value(&variables, index) as usize;
+            dest[i] = num;
+            instr_pointer += 1;
+        }
+
+        Bytecode::Add(dest, src1, src2) => {
             let num1 = read_integer_value(&variables, src1);
             let num2 = read_integer_value(&variables, src2);
             let dest = variables.get_mut(dest).unwrap();
@@ -194,7 +211,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode) {
             instr_pointer += 1;
         }
 
-        Bytecode::Sub(Op::Var(dest), src1, src2) => {
+        Bytecode::Sub(dest, src1, src2) => {
             let num1 = read_integer_value(&variables, src1);
             let num2 = read_integer_value(&variables, src2);
             let dest = variables.get_mut(dest).unwrap();
@@ -202,7 +219,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode) {
             instr_pointer += 1;
         }
 
-        Bytecode::Mult(Op::Var(dest), src1, src2) => {
+        Bytecode::Mult(dest, src1, src2) => {
             let num1 = read_integer_value(&variables, src1);
             let num2 = read_integer_value(&variables, src2);
             let dest = variables.get_mut(dest).unwrap();
@@ -210,7 +227,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode) {
             instr_pointer += 1;
         }
 
-        Bytecode::Div(Op::Var(dest), src1, src2) => {
+        Bytecode::Div(dest, src1, src2) => {
             let num1 = read_integer_value(&variables, src1);
             let num2 = read_integer_value(&variables, src2);
             if num2 == 0 {
@@ -222,7 +239,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode) {
             instr_pointer += 1;
         }
 
-        Bytecode::Mod(Op::Var(dest), src1, src2) => {
+        Bytecode::Mod(dest, src1, src2) => {
             let num1 = read_integer_value(&variables, src1);
             let num2 = read_integer_value(&variables, src2);
             if num2 == 0 {
@@ -234,7 +251,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode) {
             instr_pointer += 1;
         }
 
-        Bytecode::LessThan(Op::Var(dest), src1, src2) => {
+        Bytecode::LessThan(dest, src1, src2) => {
             let num1 = read_integer_value(&variables, src1);
             let num2 = read_integer_value(&variables, src2);
             let dest = variables.get_mut(dest).unwrap();
@@ -242,7 +259,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode) {
             instr_pointer += 1;
         }
 
-        Bytecode::LessEqual(Op::Var(dest), src1, src2) => {
+        Bytecode::LessEqual(dest, src1, src2) => {
             let num1 = read_integer_value(&variables, src1);
             let num2 = read_integer_value(&variables, src2);
             let dest = variables.get_mut(dest).unwrap();
@@ -250,7 +267,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode) {
             instr_pointer += 1;
         }
 
-        Bytecode::Equal(Op::Var(dest), src1, src2) => {
+        Bytecode::Equal(dest, src1, src2) => {
             let num1 = read_integer_value(&variables, src1);
             let num2 = read_integer_value(&variables, src2);
             let dest = variables.get_mut(dest).unwrap();
@@ -258,7 +275,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode) {
             instr_pointer += 1;
         }
 
-        Bytecode::NotEqual(Op::Var(dest), src1, src2) => {
+        Bytecode::NotEqual(dest, src1, src2) => {
             let num1 = read_integer_value(&variables, src1);
             let num2 = read_integer_value(&variables, src2);
             let dest = variables.get_mut(dest).unwrap();
@@ -266,7 +283,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode) {
             instr_pointer += 1;
         }
 
-        Bytecode::GreaterThan(Op::Var(dest), src1, src2) => {
+        Bytecode::GreaterThan(dest, src1, src2) => {
             let num1 = read_integer_value(&variables, src1);
             let num2 = read_integer_value(&variables, src2);
             let dest = variables.get_mut(dest).unwrap();
@@ -274,7 +291,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode) {
             instr_pointer += 1;
         }
 
-        Bytecode::GreaterEqual(Op::Var(dest), src1, src2) => {
+        Bytecode::GreaterEqual(dest, src1, src2) => {
             let num1 = read_integer_value(&variables, src1);
             let num2 = read_integer_value(&variables, src2);
             let dest = variables.get_mut(dest).unwrap();
@@ -302,6 +319,23 @@ fn lookup_integer_variable_id(function: &FunctionBytecode, ident: &String) -> Re
     if let Some(id) = function.variables.get(ident) {
          match id {
          VariableType::IntVar(id) => Ok(Op::Var(*id)),
+
+         VariableType::ArrayVar(_,_) => {
+             let f = format!("invalid operand. {} is an array, not an integer.", ident);
+             return Err(Box::from(f));
+         }
+
+         }
+    } else {
+         let f = format!("invalid instruction. identifier '{}' has not been declared.", ident);
+         return Err(Box::from(f));
+    }
+}
+
+fn lookup_variable_dest_id(function: &FunctionBytecode, ident: &String) -> Result<i32, Box<dyn Error>> {
+    if let Some(id) = function.variables.get(ident) {
+         match id {
+         VariableType::IntVar(id) => Ok(*id),
 
          VariableType::ArrayVar(_,_) => {
              let f = format!("invalid operand. {} is an array, not an integer.", ident);
@@ -405,7 +439,7 @@ fn parse_instruction(function: &mut FunctionBytecode, tokens: &Vec<IRTok>, idx: 
         *idx += 1;
         match next_result(tokens, idx)? {
         IRTok::Var(ident) => {
-            let dest = lookup_integer_variable_id(function, ident)?;
+            let dest = lookup_variable_dest_id(function, ident)?;
 
             if !matches!(next_result(tokens, idx)?, IRTok::Comma) {
                 return Err(Box::from("invalid instruction. missing comma. expected format like '%mov variable, 10'"));
@@ -415,7 +449,7 @@ fn parse_instruction(function: &mut FunctionBytecode, tokens: &Vec<IRTok>, idx: 
             IRTok::Var(ident) => {
                 if let Some(id) = function.variables.get(ident) {
                      match id {
-                     VariableType::IntVar(id) => Op::Var(*id),
+                     VariableType::IntVar(id) => MemRead::IntVar(*id),
          
                      VariableType::ArrayVar(_,_) => {
                          let f = format!("invalid '%mov' statement. {} is an array, not an integer.", ident);
@@ -428,15 +462,79 @@ fn parse_instruction(function: &mut FunctionBytecode, tokens: &Vec<IRTok>, idx: 
                      return Err(Box::from(f));
                 }
             }
-            IRTok::Num(num) => Op::Num(*num),
+
+            IRTok::LBrace => {
+                match (next_result(tokens,idx)?, next_result(tokens,idx)?, next_result(tokens,idx)?, next_result(tokens,idx)?) {
+                (IRTok::Var(array), IRTok::Plus, IRTok::Num(index), IRTok::RBrace) => {
+                    if let Some(id) = function.variables.get(array) {
+                        match id {
+                        VariableType::ArrayVar(id,_) => {
+                            MemRead::ArrayRead(*id, Op::Num(*index))
+                        }
+                        _ => {
+                           let f = format!("invalid '%mov' statement. {} is an integer, not an array.", array);
+                           return Err(Box::from(f));
+                        }
+
+                        }
+                    } else {
+                        let f = format!("invalid instruction. no such identifier '{}'.", array);
+                        return Err(Box::from(f));
+                    }
+                }
+
+                (IRTok::Var(array), IRTok::Plus, IRTok::Var(variable), IRTok::RBrace) => {
+                    if let Some(id) = function.variables.get(array) {
+                        match id {
+                        VariableType::ArrayVar(id,_) => {
+                            
+                            MemRead::ArrayRead(*id, lookup_integer_variable_id(function, variable)?)
+                        }
+                        _ => {
+                           let f = format!("invalid '%mov' statement. {} is an integer, not an array.", array);
+                           return Err(Box::from(f));
+                        }
+
+                        }
+                    } else {
+                        let f = format!("invalid instruction. no such identifier '{}'.", array);
+                        return Err(Box::from(f));
+                    }
+                }
+
+                _ => return Err(Box::from("invalid '%mov' statement. expected '%mov var, [array + index]'")),
+
+                }
+
+            }
+
+            IRTok::Num(num) => MemRead::Number(*num),
             _ => return Err(Box::from("invalid instruction. expected format like '%mov variable, 10'")),
             };
-            bytecode = Bytecode::Mov(dest, src);
+
+            bytecode = Bytecode::Mov(MemWrite::IntVar(dest), src);
         }
 
         IRTok::LBrace => {
-            let ident = match next_result(tokens, idx)? {
-            IRTok::Var(ident) => ident,
+            let dest = match next_result(tokens, idx)? {
+            IRTok::Var(ident) => {
+                if let Some(id) = function.variables.get(ident) {
+                    match id {
+                    VariableType::IntVar(_) => {
+                        let f = format!("invalid '%mov' statement. {} is an array, not an integer.", ident);
+                        return Err(Box::from(f));
+                    }
+         
+                    VariableType::ArrayVar(dest,_) => {
+                        *dest
+                    }
+
+                    }
+                } else {
+                    return Err(Box::from("invalid instruction. expected format like '%mov [array + 10], 10"));
+                }
+            }
+
             _ => return Err(Box::from("invalid instruction. expected format like '%mov [array + 10], 10")),
             };
 
@@ -444,17 +542,43 @@ fn parse_instruction(function: &mut FunctionBytecode, tokens: &Vec<IRTok>, idx: 
                 return Err(Box::from("invalid instruction. expected format like '%mov [array + 10], 10"));
             }
 
-            match next_result(tokens, idx)? {
-            IRTok::Var(_) => {}
-            IRTok::Num(_) => {}
+            let index = match next_result(tokens, idx)? {
+            IRTok::Var(id) => lookup_integer_variable_id(function, id)?,
+            IRTok::Num(num) => Op::Num(*num),
             _ => return Err(Box::from("invalid instruction. expected format like '%mov [array + 10], 10")),
-            }
+            };
 
             if !matches!(next_result(tokens, idx)?, IRTok::RBrace) {
                 return Err(Box::from("invalid instruction. expected format like '%mov [array + 10], 10"));
             }
 
-            todo!()
+            if !matches!(next_result(tokens, idx)?, IRTok::Comma) {
+                return Err(Box::from("invalid instruction. expected format like '%mov [array + 10], 10"));
+            }
+
+            let src = match next_result(tokens, idx)? {
+            IRTok::Var(ident) => {
+                if let Some(id) = function.variables.get(ident) {
+                     match id {
+                     VariableType::IntVar(id) => MemRead::IntVar(*id),
+         
+                     VariableType::ArrayVar(_,_) => {
+                         let f = format!("invalid '%mov' statement. {} is an array, not an integer.", ident);
+                         return Err(Box::from(f));
+                     }
+         
+                     }
+                } else {
+                     let f = format!("invalid instruction. identifier '{}' declared too many times", ident);
+                     return Err(Box::from(f));
+                }
+            }
+
+            IRTok::Num(num) => MemRead::Number(*num),
+            _ => return Err(Box::from("invalid instruction. expected format like '%mov variable, 10'")),
+            };
+
+            bytecode = Bytecode::Mov(MemWrite::ArrayWrite(dest, index), src);
         }
 
         _ => return Err(Box::from("invalid instruction. expected format like '%mov variable, 10'")),
@@ -564,9 +688,9 @@ fn parse_instruction(function: &mut FunctionBytecode, tokens: &Vec<IRTok>, idx: 
     return Ok(bytecode);
 }
 
-fn addr_code3(function: &FunctionBytecode, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<(Op, Op, Op), Box<dyn Error>> {
+fn addr_code3(function: &FunctionBytecode, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<(i32, Op, Op), Box<dyn Error>> {
     let dest = match next_result(tokens, idx)? {
-    IRTok::Var(ident) => lookup_integer_variable_id(function, ident)?,
+    IRTok::Var(ident) => lookup_variable_dest_id(function, ident)?,
     _ => return Err(Box::from("invalid dest.")),
     };
 
@@ -593,15 +717,6 @@ fn addr_code3(function: &FunctionBytecode, tokens: &Vec<IRTok>, idx: &mut usize)
     return Ok((dest, src1, src2));
 }
 
-/*
-fn peek<'a>(tokens: &'a Vec<IRTok>, index: usize) -> Option<&'a IRTok> {
-    if index < tokens.len() {
-        return Some(&tokens[index])
-    } else {
-        return None
-    }
-}
-
 fn next<'a>(tokens: &'a Vec<IRTok>, index: &mut usize) -> Option<&'a IRTok> {
     if *index < tokens.len() {
         let ret = *index;
@@ -611,7 +726,7 @@ fn next<'a>(tokens: &'a Vec<IRTok>, index: &mut usize) -> Option<&'a IRTok> {
         return None
     }
 }
-*/
+
 fn peek_result<'a>(tokens: &'a Vec<IRTok>, index: usize) -> Result<&'a IRTok, Box<dyn Error>> {
     if index < tokens.len() {
         return Ok(&tokens[index])
@@ -734,7 +849,7 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
         }
 
         StateMachine::Ident => {
-            if c == ',' || c == '\n' || c == '[' || c == ']' || c == ';' {
+            if c == ',' || c == '\n' || c == '[' || c == ']' || c == ';' || c == '+' {
                 let tok = IRTok::Var(String::from(&code[..i]));
                 return (Some(tok), &code[i..]);
             }
@@ -854,12 +969,12 @@ mod ir_tests {
         }
 
         {
-            let toks = lex_ir("%mov [arr, 0], 100\n");
+            let toks = lex_ir("%mov [arr+0], 100\n");
             assert!(toks.len() == 9);
             assert!(matches!(toks[0], IRTok::Mov));
             assert!(matches!(toks[1], IRTok::LBrace));
             assert!(matches!(toks[2], IRTok::Var(_)));
-            assert!(matches!(toks[3], IRTok::Comma));
+            assert!(matches!(toks[3], IRTok::Plus));
             assert!(matches!(toks[4], IRTok::Num(0)));
             assert!(matches!(toks[5], IRTok::RBrace));
             assert!(matches!(toks[6], IRTok::Comma));
@@ -934,6 +1049,32 @@ enum VariableType {
 }
 
 #[derive(Debug)]
+enum MemWrite {
+    IntVar(i32),
+    ArrayWrite(i32, Op),
+}
+
+#[derive(Debug)]
+enum MemRead {
+    IntVar(i32),
+    Number(i32),
+    ArrayRead(i32, Op),
+}
+
+fn read_memory(variables: &HashMap<i32, i32>, arrays: &HashMap<i32, Vec<i32>>, read: &MemRead) -> i32 {
+    match read {
+    MemRead::IntVar(id) => *variables.get(&id).unwrap(),
+    MemRead::Number(number) => *number,
+    MemRead::ArrayRead(id, index) => {
+        let array = arrays.get(&id).unwrap();
+        let variable = read_integer_value(&variables, &index) as usize;
+        array[variable]
+    }
+    }
+}
+
+
+#[derive(Debug)]
 enum Bytecode {
 
     // EndFunc
@@ -948,20 +1089,20 @@ enum Bytecode {
     In(Op),
 
     // mathematical operators.
-    Mov(Op, Op),
-    Add(Op, Op, Op),
-    Sub(Op, Op, Op),
-    Mult(Op, Op, Op),
-    Div(Op, Op, Op),
-    Mod(Op, Op, Op),
+    Mov(MemWrite, MemRead),
+    Add(i32, Op, Op),
+    Sub(i32, Op, Op),
+    Mult(i32, Op, Op),
+    Div(i32, Op, Op),
+    Mod(i32, Op, Op),
 
     // comparison operators.
-    LessThan(Op, Op, Op),
-    LessEqual(Op, Op, Op),
-    NotEqual(Op, Op, Op),
-    Equal(Op, Op, Op),
-    GreaterEqual(Op, Op, Op),
-    GreaterThan(Op, Op, Op),
+    LessThan(i32, Op, Op),
+    LessEqual(i32, Op, Op),
+    NotEqual(i32, Op, Op),
+    Equal(i32, Op, Op),
+    GreaterEqual(i32, Op, Op),
+    GreaterThan(i32, Op, Op),
     Return(Op),
 }
 
