@@ -563,6 +563,16 @@ fn lookup_variable_dest_id(function: &FunctionBytecode, ident: &String) -> Resul
 }
 
 fn parse_instruction(line: usize, function: &mut FunctionBytecode, labels_hash: &mut HashMap<String, usize>, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<Bytecode, Box<dyn Error>> {
+
+    // get rid of newlines.
+    loop {
+        if matches!(peek_result(tokens, *idx)?, IRTok::EndInstr) {
+            *idx += 1;
+        } else {
+            break;
+        }
+    }
+
     let bytecode: Bytecode;
     let opcode = peek_result(tokens, *idx)?;
     match opcode {
