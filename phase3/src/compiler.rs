@@ -67,12 +67,15 @@ fn parse_ir(tokens: &Vec<IRTok>, idx: &mut usize) -> Result<FunctionBytecode, Bo
         return Err(Box::from("%func header must end with a newline"));
     }
 
+    let mut labels_hash: HashMap<String, usize> = Default::default();
+    let mut line: usize = 0;
     loop {
-        let bytecode = parse_instruction(&mut function_bytecode, tokens, idx)?;
+        let bytecode = parse_instruction(line, &mut function_bytecode, &mut labels_hash, tokens, idx)?;
         if matches!(bytecode, Bytecode::End) {
             break;
         }
         function_bytecode.body.push(bytecode); 
+        line += 1;
     }
 
     if !matches!(next_result(tokens, idx)?, IRTok::EndFunc) {
@@ -80,6 +83,44 @@ fn parse_ir(tokens: &Vec<IRTok>, idx: &mut usize) -> Result<FunctionBytecode, Bo
     }
 
     function_bytecode.body.push(Bytecode::End); 
+    for i in 0..function_bytecode.body.len() {
+        match &function_bytecode.body[i] {
+        Bytecode::Jmp(index) => {
+            if let IRTok::Label(label_name) = &tokens[*index] {
+                if let Some(id) = labels_hash.get(label_name) {
+                    function_bytecode.body[i] = Bytecode::Jmp(*id);
+                } else {
+                    return Err(Box::from(format!("Error. invalid label {}", label_name)));
+                }
+            } else {
+                return Err(Box::from("Internal Compiler Error."));
+            }
+        }
+        Bytecode::BranchIf(tf, index) => {
+            if let IRTok::Label(label_name) = &tokens[*index] {
+                if let Some(id) = labels_hash.get(label_name) {
+                    function_bytecode.body[i] = Bytecode::BranchIf(tf.clone(), *id);
+                } else {
+                    return Err(Box::from(format!("Error. invalid label {}", label_name)));
+                }
+            } else {
+                return Err(Box::from("Internal Compiler Error."));
+            }
+        }
+        Bytecode::BranchIfn(tf, index) => {
+            if let IRTok::Label(label_name) = &tokens[*index] {
+                if let Some(id) = labels_hash.get(label_name) {
+                    function_bytecode.body[i] = Bytecode::BranchIfn(tf.clone(), *id);
+                } else {
+                    return Err(Box::from(format!("Error. invalid label {}", label_name)));
+                }
+            } else {
+                return Err(Box::from("Internal Compiler Error."));
+            }
+        }
+        _ => {}
+        }
+    }
     return Ok(function_bytecode);
 }
 
@@ -299,8 +340,40 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode) {
             instr_pointer += 1;
         }
 
+        Bytecode::Label(_) => {
+            instr_pointer += 1;
+        }
+
+        Bytecode::Jmp(jump) => {
+            instr_pointer = *jump;
+        }
+
+        Bytecode::BranchIf(src1, jump) => {
+            let num1 = read_integer_value(&variables, src1);
+            match num1 {
+            0 => {instr_pointer += 1;}
+            1 => {instr_pointer = *jump;}
+            _ => {
+                println!("Error. Branch on a variable that is neither 0 or 1. The value is: {}", num1);
+                break;
+            }
+            }
+        }
+
+        Bytecode::BranchIfn(src1, jump) => {
+            let num1 = read_integer_value(&variables, src1);
+            match num1 {
+            0 => {instr_pointer += 1;}
+            1 => {instr_pointer = *jump;}
+            _ => {
+                println!("Error. Branch on a variable that is neither 0 or 1. The value is: {}", num1);
+                break;
+            }
+            }
+        }
+
         _ => {
-             todo!();
+            todo!();
         }
 
         }
@@ -349,7 +422,7 @@ fn lookup_variable_dest_id(function: &FunctionBytecode, ident: &String) -> Resul
     }
 }
 
-fn parse_instruction(function: &mut FunctionBytecode, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<Bytecode, Box<dyn Error>> {
+fn parse_instruction(line: usize, function: &mut FunctionBytecode, labels_hash: &mut HashMap<String, usize>, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<Bytecode, Box<dyn Error>> {
     let bytecode: Bytecode;
     let opcode = peek_result(tokens, *idx)?;
     match opcode {
@@ -657,17 +730,62 @@ fn parse_instruction(function: &mut FunctionBytecode, tokens: &Vec<IRTok>, idx: 
     //Label,
     IRTok::Jump => {
         *idx += 1;
-        todo!();
+        match peek_result(tokens, *idx)? {
+        IRTok::Label(_) => {
+            bytecode = Bytecode::Jmp(*idx);
+            *idx += 1;
+        }
+
+        _ => return Err(Box::from("%jmp requires a label. such as '%jmp %label'")),
+        }
+    }
+
+    IRTok::Label(name) => {
+        *idx += 1;
+        labels_hash.insert(name.clone(), line);
+        bytecode = Bytecode::Label(line);
     }
 
     IRTok::BranchIf => {
         *idx += 1;
-        todo!();
+        let dest = match next_result(tokens, idx)? {
+        IRTok::Var(ident) => lookup_integer_variable_id(function, ident)?,
+        IRTok::Num(num) => Op::Num(*num),
+        _ => return Err(Box::from("%branch_if requires an identifier 'TF'")),
+        };
+
+        if !matches!(next_result(tokens, idx)?, IRTok::Comma) {
+            return Err(Box::from("missing ',' from %branch_if instruction."));
+        }
+
+        match peek_result(tokens, *idx)? {
+        IRTok::Label(_) => {
+            bytecode = Bytecode::BranchIf(dest, *idx);
+            *idx += 1;
+        }
+        _ => return Err(Box::from("%branch_if requires a label '%label'. (e.g. '%branch_if TF, %label')")),
+        }
     }
 
     IRTok::BranchIfNot => {
         *idx += 1;
-        todo!();
+        let dest = match next_result(tokens, idx)? {
+        IRTok::Var(ident) => lookup_integer_variable_id(function, ident)?,
+        IRTok::Num(num) => Op::Num(*num),
+        _ => return Err(Box::from("%branch_ifn requires an identifier 'TF'")),
+        };
+
+        if !matches!(next_result(tokens, idx)?, IRTok::Comma) {
+            return Err(Box::from("missing ',' from %branch_ifn instruction."));
+        }
+
+        match peek_result(tokens, *idx)? {
+        IRTok::Label(_) => {
+            bytecode = Bytecode::BranchIfn(dest, *idx);
+            *idx += 1;
+        }
+        _ => return Err(Box::from("%branch_ifn requires a label '%label'. (e.g. '%branch_if TF, %label')")),
+        }
     }
 
     IRTok::EndFunc => {
@@ -781,8 +899,8 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
         "%ge" => Some(GreaterEqual),
         "%jmp" => Some(Jump),
         "%branch_if" => Some(BranchIf),
-        "%branch_if_not" => Some(BranchIfNot),
-        _ => None,
+        "%branch_ifn" => Some(BranchIfNot),
+        _ => Some(Label(String::from(s))),
 
         }
     }
@@ -1020,7 +1138,7 @@ enum IRTok {
     GreaterThan,
 
     // labels/branching
-    //Label,
+    Label(String),
     Jump,
     BranchIf,
     BranchIfNot,
@@ -1036,7 +1154,7 @@ enum IRTok {
     Var(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Op {
     Num(i32),
     Var(i32),
@@ -1079,6 +1197,7 @@ enum Bytecode {
 
     // EndFunc
     End,
+    Label(usize),
 
     // declarations.
     Int(Op),
@@ -1104,6 +1223,9 @@ enum Bytecode {
     GreaterEqual(i32, Op, Op),
     GreaterThan(i32, Op, Op),
     Return(Op),
+    Jmp(usize),
+    BranchIf(Op, usize),
+    BranchIfn(Op, usize),
 }
 
 
