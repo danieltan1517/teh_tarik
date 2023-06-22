@@ -100,41 +100,32 @@ be generating IR for a provided interpreter, and running that interpreter to run
 interpreter is available in `compiler.rs`.
 
 | Instruction               | Description                                                                      |
-|---------------------------|----------------------------------------------------------------------------------|
 | %func func(a,b,c)         | declares a function named 'function' with parameters(a,b,c) in that order        |
 | %endfunc                  | closes the existing function                                                     |
-|---------------------------|----------------------------------------------------------------------------------|
 | %int  variable            | declares a 32 bit integer value named 'variable'                                 |
 | %int [] array, 32         | declares an array of 32 bit integers of length 32                                |
-|---------------------------|----------------------------------------------------------------------------------|
 | %mov  dest, src1          | dest = src1                                                                      |
 | %mov  [array + i], src1   | array[i] = src1                                                                  |
 | %mov  dest, [array + i]   | dest = array[i]                                                                  |
-|---------------------------|----------------------------------------------------------------------------------|
 | %add  dest, src1, src2    | dest = src1 +  src2                                                              |
 | %sub  dest, src1, src2    | dest = src1 -  src2                                                              |
 | %mult dest, src1, src2    | dest = src1 *  src2                                                              |
 | %div  dest, src1, src2    | dest = src1 /  src2                                                              |
 | %mod  dest, src1, src2    | dest = src1 %  src2                                                              |
-|---------------------------|----------------------------------------------------------------------------------|
 | %lt   dest, src1, src2    | dest = src1 <  src2                                                              |  
 | %le   dest, src1, src2    | dest = src1 <= src2                                                              |
 | %neq  dest, src1, src2    | dest = src1 != src2                                                              |
 | %eq   dest, src1, src2    | dest = src1 == src2                                                              |
 | %gt   dest, src1, src2    | dest = src1 >  src2                                                              |
 | %ge   dest, src1, src2    | dest = src1 >= src2                                                              |
-|---------------------------|----------------------------------------------------------------------------------|
 | %out  value               | prints out the value to standard output                                          |
 | %in   value               | store an integer from standard input into 'value'                                |
-|---------------------------|----------------------------------------------------------------------------------|
 | %call dest, func(a,b)     | calls a function 'func' with parameters (a,b). Stores the return value in 'dest' |
 | %ret  value               | return 'value' from the function.                                                |
-|---------------------------|----------------------------------------------------------------------------------|
 | %label                    | declares a label '%label'. Used in branching code                                |
 | %jmp  %label              | jumps to '%label' unconditionally                                                |
 | %branch_if var, %label    | jumps to '%label' if var is 1. Does nothing if var is 0                          |
 | %branch_ifn var, %label   | jumps to '%label' if var is 0. Does nothing if var is 1                          |
-|---------------------------|----------------------------------------------------------------------------------|
 
 
 
