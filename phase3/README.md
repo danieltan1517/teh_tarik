@@ -132,6 +132,11 @@ Here is the instruction set IR for the interpreter you will be using to run the 
 
 ### Generated Example Code
 
+Here are some examples of possible generated IR outputs. One can generate any IR code for the given code, as
+long as the generated IR functions in the same way. **Any IR generated is acceptable, as long as it outputs
+the same numbers**.
+
+#### add
 Given the following `add.tt` program:
 
 ```
@@ -160,6 +165,12 @@ Here is a possible generated IR code for `add.tt`:
 %endfunc
 ```
 
+The output of `add.tt` should be:
+```
+150
+```
+
+#### math
 Given the following `math.tt` program:
 ```
 # A simple program which shows mathematical operations.
@@ -240,6 +251,7 @@ Here's a possible generated IR code for `math.tt`:
 ```
 
 Take note that `c = (a + 2) * b;` is broken down into multiple instructions, with several intermediate registers to restore temporary results.
+
 ```
 %int _temp6
 %add _temp6, a, 2
@@ -258,5 +270,123 @@ The output of `math.tt` should be:
 42
 ```
 
+#### array
+
+Given the follow `array.tt` example:
+
+```
+func main() {
+    int [4] array;
+
+    # Should print out '2'
+    array[0] = 2;
+    print(array[0]);
+
+    # Should print out '4'
+    array[1] = array[0] + array[0];
+    print(array[1]);
+
+    # Should print out '8'
+    array[2] = array[1] + 2 * 2;
+    print(array[2]);
+
+}
+```
+
+An example possible IR could be:
+```
+%func main()
+%int[] array, 4
+%mov [array + 0], 2
+%int _temp1
+%mov _temp1, [array + 0]
+%out _temp1
+%int _temp2
+%mov _temp2, [array + 0]
+%int _temp3
+%mov _temp3, [array + 0]
+%int _temp4
+%add _temp4, _temp2, _temp3
+%mov [array + 1], _temp4
+%int _temp5
+%mov _temp5, [array + 1]
+%out _temp5
+%int _temp6
+%mov _temp6, [array + 1]
+%int _temp7
+%mult _temp7, 2, 2
+%int _temp8
+%add _temp8, _temp6, _temp7
+%mov [array + 2], _temp8
+%int _temp9
+%mov _temp9, [array + 2]
+%out _temp9
+%endfunc
+```
+
+When running the intepreter, it should output:
+```
+2
+4
+8
+```
+
+### function
+
+Given the following `function.tt`:
+```
+func add(int a, int b) {
+    return a + b;
+}
+
+func mul(int a, int b) {
+     return a * b;
+}
+
+func main() {
+    int a;
+    int b;
+    a = add(10, 2);
+    print(a);
+    b = mul(a, a + b);
+    print(b);
+}
+```
+
+You can output the following IR:
+```
+%func add(%int a, %int b, )
+%int _temp1
+%add _temp1, a, b
+%ret _temp1
+%endfunc
+
+%func mul(%int a, %int b, )
+%int _temp2
+%mult _temp2, a, b
+%ret _temp2
+%endfunc
+
+%func main()
+%int a
+%int b
+%int _temp3
+%call _temp3, add(10, 2, )
+%mov a, _temp3
+%out a
+%int _temp4
+%add _temp4, a, b
+%int _temp5
+%call _temp5, mul(a, _temp4, )
+%mov b, _temp5
+%out b
+%endfunc
+```
+
+The output of the program should be:
+```
+12
+144
+```
 
 
