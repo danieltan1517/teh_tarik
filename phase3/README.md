@@ -99,9 +99,11 @@ for this class, we will only be generating a simple IR built for teaching studen
 be generating IR for a provided interpreter, and running that interpreter to run the generated IR. The
 interpreter is available in `compiler.rs`.
 
+Here is the instruction set IR for the interpreter you will be using to run the generated code:
+
 | Instruction               | Description                                                                      |
 |---------------------------|----------------------------------------------------------------------------------|
-| %func func(a,b,c)         | declares a function named 'function' with parameters(a,b,c) in that order        |
+| %func func(%int a, %int b)| declares a function named 'function' with parameters a and b in that order       |
 | %endfunc                  | closes the existing function                                                     |
 | %int  variable            | declares a 32 bit integer value named 'variable'                                 |
 | %int [] array, 32         | declares an array of 32 bit integers of length 32                                |
@@ -128,7 +130,133 @@ interpreter is available in `compiler.rs`.
 | %branch_if var, %label    | jumps to '%label' if var is 1. Does nothing if var is 0                          |
 | %branch_ifn var, %label   | jumps to '%label' if var is 0. Does nothing if var is 1                          |
 
----
+### Generated Example Code
+
+Given the following `add.tt` program:
+
+```
+func main() {
+  int a;
+  int b;
+  int c;
+  a = 100;
+  b = 50;
+  c = a + b;
+  print(c);
+}
+```
+
+Here is a possible generated IR code for `add.tt`:
+
+```
+%func main()
+%int a
+%int b
+%int c
+%mov a, 100 
+%mov b, 50 
+%add c, a, b
+%out c
+%endfunc
+```
+
+Given the following `math.tt` program:
+```
+# A simple program which shows mathematical operations.
+
+func main() {
+  int a;
+  int b;
+  int c;
+
+  a = 100;
+  b = 50;
+
+  # This should output '150'
+  c = a + b;
+  print(c);
+
+  # This should output '50'
+  c = a - b;
+  print(c);
+
+  # This should output '5000'
+  c = a * b;
+  print(c);
+
+  # This should output '2'
+  c = a / b;
+  print(c);
+
+  # This should output '0'
+  c = a % b;
+  print(c);
+
+  # Complex Expression. (4 + 2) * 7
+  a = 4;
+  b = 7;
+  c = (a + 2) * b;
+  print(c);
+}
+```
+
+Here's a possible generated IR code for `math.tt`:
+```
+%func main()
+%int a
+%int b
+%int c
+%mov a, 100
+%mov b, 50
+%int _temp1
+%add _temp1, a, b
+%mov c, _temp1
+%out c
+%int _temp2
+%sub _temp2, a, b
+%mov c, _temp2
+%out c
+%int _temp3
+%mult _temp3, a, b
+%mov c, _temp3
+%out c
+%int _temp4
+%div _temp4, a, b
+%mov c, _temp4
+%out c
+%int _temp5
+%mod _temp5, a, b
+%mov c, _temp5
+%out c
+%mov a, 4
+%mov b, 7
+%int _temp6
+%add _temp6, a, 2
+%int _temp7
+%mult _temp7, _temp6, b
+%mov c, _temp7
+%out c
+%endfunc
+```
+
+Take note that `c = (a + 2) * b;` is broken down into multiple instructions, with several intermediate registers to restore temporary results.
+```
+%int _temp6
+%add _temp6, a, 2
+%int _temp7
+%mult _temp7, _temp6, b
+%mov c, _temp7
+```
+
+The output of `math.tt` should be:
+```
+150
+50
+5000
+2
+0
+42
+```
 
 
 
