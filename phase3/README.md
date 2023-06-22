@@ -54,6 +54,15 @@ the control flow of the program and take note of how the intermediate representa
 Output the intermediate represention as a `String`. Afterwards, call `compile_and_run` to compile and
 run the generated IR.
 
+The following pseudocode describes the structure of the program, where `lex` is the lexing code from
+Phase 1, and `parse` is from Phase 2.
+
+```
+let tokens = lex(code)?; 
+let generated_code: String = parse(tokens)?;
+compiler::compile_and_run(&generated_code);
+```
+
 Generate code as a `String` in the function `parse_program`. If `parse_program` is successful, 
 call `compile_and_run` to compile and run the code. If `parse_program` fails, return an error.
 
@@ -77,6 +86,55 @@ You can include the interpreter found in `compiler.rs` as part of your project. 
 any modifications to the interpreter. You can make any change you want to the existing interpreter code.
 The interpreter code as found in `compiler.rs` should be sufficient enough to complete Phase 3 and 4.
 
+### IR Syntax and Semantics
+
+An intermediate representation is the data structure or code used internally by a compiler to
+represent pseudo-assembly. The compiler takes the IR, performs compiler optimizations on the IR,
+and translates that IR into assembly language. The IR is a way to allow a compiler to target multiple
+computer architectures, multiple CPUs, or multiple operating systems. The IR is a portable pseudo-
+assembly language representation that is eventually compiled down into real assembly.
+
+The real IR of real compilers such as GCC or Clang can be incredibly difficult to program for, and
+for this class, we will only be generating a simple IR built for teaching students compilers. We will
+be generating IR for a provided interpreter, and running that interpreter to run the generated IR. The
+interpreter is available in `compiler.rs`.
+
+| Instruction               | Description                                                                      |
+|---------------------------|----------------------------------------------------------------------------------|
+| %func func(a,b,c)         | declares a function named 'function' with parameters(a,b,c) in that order        |
+| %endfunc                  | closes the existing function                                                     |
+|---------------------------|----------------------------------------------------------------------------------|
+| %int  variable            | declares a 32 bit integer value named 'variable'                                 |
+| %int [] array, 32         | declares an array of 32 bit integers of length 32                                |
+|---------------------------|----------------------------------------------------------------------------------|
+| %mov  dest, src1          | dest = src1                                                                      |
+| %mov  [array + i], src1   | array[i] = src1                                                                  |
+| %mov  dest, [array + i]   | dest = array[i]                                                                  |
+|---------------------------|----------------------------------------------------------------------------------|
+| %add  dest, src1, src2    | dest = src1 +  src2                                                              |
+| %sub  dest, src1, src2    | dest = src1 -  src2                                                              |
+| %mult dest, src1, src2    | dest = src1 *  src2                                                              |
+| %div  dest, src1, src2    | dest = src1 /  src2                                                              |
+| %mod  dest, src1, src2    | dest = src1 %  src2                                                              |
+|---------------------------|----------------------------------------------------------------------------------|
+| %lt   dest, src1, src2    | dest = src1 <  src2                                                              |  
+| %le   dest, src1, src2    | dest = src1 <= src2                                                              |
+| %neq  dest, src1, src2    | dest = src1 != src2                                                              |
+| %eq   dest, src1, src2    | dest = src1 == src2                                                              |
+| %gt   dest, src1, src2    | dest = src1 >  src2                                                              |
+| %ge   dest, src1, src2    | dest = src1 >= src2                                                              |
+|---------------------------|----------------------------------------------------------------------------------|
+| %out  value               | prints out the value to standard output                                          |
+| %in   value               | store an integer from standard input into 'value'                                |
+|---------------------------|----------------------------------------------------------------------------------|
+| %call dest, func(a,b)     | calls a function 'func' with parameters (a,b). Stores the return value in 'dest' |
+| %ret  value               | return 'value' from the function.                                                |
+|---------------------------|----------------------------------------------------------------------------------|
+| %label                    | declares a label '%label'. Used in branching code                                |
+| %jmp  %label              | jumps to '%label' unconditionally                                                |
+| %branch_if var, %label    | jumps to '%label' if var is 1. Does nothing if var is 0                          |
+| %branch_ifn var, %label   | jumps to '%label' if var is 0. Does nothing if var is 1                          |
+|---------------------------|----------------------------------------------------------------------------------|
 
 
 
