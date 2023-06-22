@@ -492,7 +492,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
             // 
             todo!();
 
-            let _expr = parse_boolean_expr(tokens, index)?;
+            let expr = parse_boolean_expr(tokens, index)?;
 
             if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
                 return Err(Box::from("expect '(' closing statement"));
