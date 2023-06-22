@@ -1,6 +1,7 @@
 use std::env;
 use std::fs;
 use std::error::Error;
+mod compiler;
 
 fn main() {
     // get commandline arguments.
@@ -47,7 +48,7 @@ fn main() {
     match parse_program(&tokens, &mut index) {
 
     Ok(generated_code) => {
-        println!("{}", generated_code);
+        compiler::compile_and_run(&generated_code);
     }
 
     Err(message) => {
@@ -377,56 +378,15 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Bo
     if !matches!( next_error(tokens, index)?, Token::LeftParen) {
         return Err(Box::from("expected '('"));
     }
-
-    let mut code = format!("func {}\n", func_ident);
-    let mut params: Vec<String> = vec![];
-    loop {
-       match next_error(tokens, index)? {
-
-       Token::RightParen => {
-           break;
-       }
-
-       Token::Int => {
-           match next_error(tokens, index)? {
-           Token::Ident(param) => {
-               params.push(param.clone());
-               match peek_error(tokens, *index)? {
-               Token::Comma => {
-                   *index += 1;
-               }
-               Token::RightParen => {}
-               _ => {
-                   return Err(Box::from("expected ',' or ')'"));
-               }
-
-               }
-           }
-           _ => {
-                return Err(Box::from("expected ident function parameter"));
-           }
-
-           }
-       }
-
-       _ => {
-           return Err(Box::from("expected 'int' keyword or ')' token"));
-       }
-
-       }
+    if !matches!( next_error(tokens, index)?, Token::RightParen) {
+        return Err(Box::from("expected '('"));
     }
-
 
     if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
         return Err(Box::from("expected '{'"));
     }
 
-    for (index, param) in params.iter().enumerate() {
-        let decl = format!(". {}\n", param);
-        let assign = format!("= {}, ${}\n", param, index);
-        code += &decl;
-        code += &assign;
-    }
+    let mut code = format!("%func {func_ident}()\n");
 
     loop {
         match parse_statement(tokens, index)? {
@@ -439,7 +399,7 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Bo
         }
     }
 
-    code += "endfunc\n\n";
+    code += "%endfunc\n\n";
 
     if !matches!(next_error(tokens, index)?, Token::RightCurly) {
       return Err(Box::from("expected '}'"));
@@ -473,7 +433,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
             *index += 1;
             match next_error(tokens, index)? {
             Token::Ident(ident) => {
-                let statement = format!(". {}\n", ident);
+                let statement = format!("%int {}\n", ident);
                 codenode = CodeNode::Code(statement);
             }
 
@@ -487,24 +447,22 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
         // while loop.
         Token::While => {
             *index += 1;
-            // need to do code generation for while loops.
-            // 
-            // 
             todo!();
-
+            // do code generation for while loops.
             let expr = parse_boolean_expr(tokens, index)?;
 
             if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
                 return Err(Box::from("expect '(' closing statement"));
             }
 
+            // parsing the while loop body
             loop {
                 match parse_statement(tokens, index)? {
                 CodeNode::Epsilon => {
                     break;
                 }
-                CodeNode::Code(_) => {
-
+                CodeNode::Code(statement) => {
+                    // += statement
                 }
                 }
             }
@@ -512,7 +470,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
             if !matches!(next_error(tokens, index)?, Token::RightCurly) {
                 return Err(Box::from("expect '(' closing statement"));
             }
-            
+
             codenode = CodeNode::Code(String::from(""));
             return Ok(codenode);
         }
@@ -523,14 +481,14 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
                 return Err(Box::from("expected '=' assignment operator"));
             }
             let expr = parse_expression(tokens, index)?;
-            let code = format!("{}= {}, {}\n", expr.code, ident, expr.name);
+            let code = format!("{}%mov {}, {}\n", expr.code, ident, expr.name);
             codenode = CodeNode::Code(code);
         }
 
         Token::Return => {
             *index += 1;
             let expr = parse_expression(tokens, index)?;
-            let code = format!("{}ret {}\n", expr.code, expr.name);
+            let code = format!("{}%ret {}\n", expr.code, expr.name);
             codenode = CodeNode::Code(code);
         }
 
@@ -541,7 +499,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
             }
 
             let expr = parse_expression(tokens, index)?;
-            let code = format!("{}.> {}\n", expr.code, expr.name);
+            let code = format!("{}%out {}\n", expr.code, expr.name);
             if !matches!(next_error(tokens, index)?, Token::RightParen) {
                 return Err(Box::from("expect ')' closing statement"));
             }
@@ -555,7 +513,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
             }
 
             let expr = parse_expression(tokens, index)?;
-            let code = format!("{}.< {}\n", expr.code, expr.name);
+            let code = format!("{}%in {}\n", expr.code, expr.name);
 
             if !matches!(next_error(tokens, index)?, Token::RightParen) {
                 return Err(Box::from("expect ')' closing statement"));
@@ -587,11 +545,11 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression, Box<dyn Error>> {
     let mut expr = parse_term(tokens, index)?;
     let opcode = match peek_error(tokens, *index)? {
-    Token::Plus => "+",
-    Token::Subtract => "-",
-    Token::Multiply => "*",
-    Token::Divide => "/",
-    Token::Modulus => "%",
+    Token::Plus => "%add",
+    Token::Subtract => "%sub",
+    Token::Multiply => "%mult",
+    Token::Divide => "%div",
+    Token::Modulus => "%mod",
 
     _ => { 
         return Ok(expr); 
@@ -602,7 +560,7 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression
     *index += 1;
     let m_expr = parse_term(tokens, index)?;
     let t = create_temp();
-    let instr = format!(". {}\n{opcode} {}, {}, {}\n", t, t, expr.name, m_expr.name);
+    let instr = format!("%int {}\n{opcode} {}, {}, {}\n", t, t, expr.name, m_expr.name);
     expr.code += &m_expr.code;
     expr.code += &instr;
     expr.name = t;
@@ -643,7 +601,7 @@ fn parse_boolean_expr(tokens: &Vec<Token>, index: &mut usize) -> Result<Expressi
     }
     let expr2 = parse_term(tokens, index)?;
     let t = create_temp();
-    let code = format!("{}{}. {t}\n< {t}, {}, {}\n", expr1.code, expr2.code, expr1.name, expr2.name);
+    let code = format!("{}{}%int {t}\n%lt {t}, {}, {}\n", expr1.code, expr2.code, expr1.name, expr2.name);
     let name = t;
     let expr = Expression {
         code : code,
