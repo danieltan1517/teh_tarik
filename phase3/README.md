@@ -99,7 +99,7 @@ for this class, we will only be generating a simple IR built for teaching studen
 be generating IR for a provided interpreter, and running that interpreter to run the generated IR. The
 interpreter is available in `compiler.rs`.
 
-Here is the instruction set IR for the interpreter you will be using to run the generated code:
+Here is the entire instruction set IR for the interpreter you will be using to run the generated code:
 
 | Instruction               | Description                                                                      |
 |---------------------------|----------------------------------------------------------------------------------|
