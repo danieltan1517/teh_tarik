@@ -979,7 +979,11 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 
     IRTok::Label(name) => {
         *idx += 1;
-        labels_hash.insert(name.clone(), line);
+        if let None = labels_hash.get(name) {
+            labels_hash.insert(name.clone(), line);
+        } else {
+            return error(*serialized_line, format!("label {} already defined.", name));
+        }
         bytecode = Bytecode::Label(line);
     }
 
