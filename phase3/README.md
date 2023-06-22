@@ -100,6 +100,7 @@ be generating IR for a provided interpreter, and running that interpreter to run
 interpreter is available in `compiler.rs`.
 
 | Instruction               | Description                                                                      |
+|---------------------------|----------------------------------------------------------------------------------|
 | %func func(a,b,c)         | declares a function named 'function' with parameters(a,b,c) in that order        |
 | %endfunc                  | closes the existing function                                                     |
 | %int  variable            | declares a 32 bit integer value named 'variable'                                 |
@@ -127,7 +128,7 @@ interpreter is available in `compiler.rs`.
 | %branch_if var, %label    | jumps to '%label' if var is 1. Does nothing if var is 0                          |
 | %branch_ifn var, %label   | jumps to '%label' if var is 0. Does nothing if var is 1                          |
 
-
+---
 
 
 
