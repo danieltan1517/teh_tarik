@@ -1,10 +1,20 @@
-# Doing Code Generation in Rust
+# Doing Simple Code Generation in Rust
 
 ### Introduction
 
 Now that the lexer and parser is built, we can now do code generation. You will take a high level 
 language grammar and translate that high level language grammar into an intermediate representation.
 Represent the intermediate representation as a `String`.
+
+We will be splitting code generation into two halves: "simple" code generation and "complicated" code
+generation. In "simple" code generation, you will be doing function calls, move statements, arithmetic
+statements, return statements, and input/output statements. Anything that is not a function call, move statement, or
+arithmetic statement will be done in the second half of the assignment. **This means that comparison
+operations, labels, and branches will NOT be done during this phase. Loops and branching statements
+will be done in Phase 4.**
+
+We are doing only "simple" code generation, that is code that contains linear control flow and starts from
+the top and ends at the bottom, with no branches or jumping around. 
 
 ### Unsafe
 
@@ -130,7 +140,7 @@ Here is the entire instruction set IR for the interpreter you will be using to r
 | %branch_if var, %label    | jumps to '%label' if var is 1. Does nothing if var is 0                          |
 | %branch_ifn var, %label   | jumps to '%label' if var is 0. Does nothing if var is 1                          |
 
-### Generated Example Code
+### Generated Example IR Code
 
 Here are some examples of possible generated IR outputs. One can generate any IR code for the given code, as
 long as the generated IR functions in the same way. **Any IR generated is acceptable, as long as it outputs
@@ -170,6 +180,7 @@ The output of `add.tt` should be:
 150
 ```
 
+---
 #### math
 Given the following `math.tt` program:
 ```
@@ -270,6 +281,7 @@ The output of `math.tt` should be:
 42
 ```
 
+---
 #### array
 
 Given the follow `array.tt` example:
@@ -330,7 +342,7 @@ When running the intepreter, it should output:
 4
 8
 ```
-
+---
 ### function
 
 Given the following `function.tt`:
