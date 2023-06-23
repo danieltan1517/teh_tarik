@@ -1,0 +1,37 @@
+func main() {
+
+    int[100] primes;
+    int i = 0;
+
+    # initialization of the array.
+    while i < 100 {
+        primes[i] = 0;
+        i = i + 1;
+    }
+
+    # compute primes using the Sieve of Eratosthenes
+    # compute primes up to 100 by crossing out multiples of
+    # successively larger primes in a boolean array.
+
+    i = 2;
+    while i < 10 {
+        if primes[i] == 0 {
+            int j = i + i;
+            while j < 100 {
+                primes[j] = 1;
+                j = j + i;
+            }
+        }
+        i = i + 1;
+    }
+
+    # print all primes from 1 to 100.
+    i = 2;
+    while i < 100 {
+        if primes[i] == 0 {
+            print(i);
+        }
+        i = i + 1;
+    }
+    
+}
