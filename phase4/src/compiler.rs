@@ -7,7 +7,7 @@ pub fn compile_and_run(code: &str) {
     }
 
     Err(e) => {
-        println!("***Error.");
+        println!("***Error. Invalid Bytecode.");
         println!("------------------");
         for (i, l) in code.lines().enumerate() {
             println!("{:03}:  {}", i+1, l);
@@ -15,6 +15,7 @@ pub fn compile_and_run(code: &str) {
                 break;
             }
         }
+        println!("------------------");
         println!("{e}");
         return;
     }
@@ -306,7 +307,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode, calls: &Vec<Func
     }
     if parameters.len() != function.parameters {
          let e = format!("Runtime Error. Incorrect number of parameters passed to the function. Expected {}, got {} parameters", function.parameters, parameters.len());
-         return error(0, e);
+         return error(MAX_LINE, e);
     }
 
     // hopefully this covers everything needed for parameter passing...
@@ -326,13 +327,13 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode, calls: &Vec<Func
             break;
         }
 
-        Bytecode::Int(Op::Var(id)) => {
+        Bytecode::Int(id) => {
             let value = variables.get_mut(id).unwrap();
             *value = 0;
             instr_pointer += 1;
         }
 
-        Bytecode::IntArray(Op::Var(id), Op::Num(len)) => {
+        Bytecode::IntArray(id, len) => {
             let array = arrays.get_mut(id).unwrap();
             for i in 0..*len {
                  let idx = i as usize;
@@ -347,7 +348,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode, calls: &Vec<Func
             instr_pointer += 1;
         }
 
-        Bytecode::In(Op::Var(id)) => {
+        Bytecode::In(id) => {
             let mut buf = String::with_capacity(64);
             loop {
                 match stdin.read_line(&mut buf) {
@@ -395,7 +396,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode, calls: &Vec<Func
                 instr_pointer += 1;
             } else {
                 let e = format!("Runtime Error: Array out of bounds. Value {}. Array Length {}", i, dest.len());
-                return error(0, e);
+                return error(MAX_LINE, e);
             }
         }
 
@@ -428,7 +429,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode, calls: &Vec<Func
             let num2 = read_integer_value(&variables, src2);
             if num2 == 0 {
                 let e = String::from("Error. Attempt to divide by zero.");
-                return error(0, e);
+                return error(MAX_LINE, e);
             }
             let dest = variables.get_mut(dest).unwrap();
             *dest = num1 / num2;
@@ -440,7 +441,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode, calls: &Vec<Func
             let num2 = read_integer_value(&variables, src2);
             if num2 == 0 {
                 let e = String::from("Error. Attempt to divide by zero.");
-                return error(0, e);
+                return error(MAX_LINE, e);
             }
             let dest = variables.get_mut(dest).unwrap();
             *dest = num1 % num2;
@@ -510,7 +511,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode, calls: &Vec<Func
             1 => {instr_pointer = *jump;}
             _ => {
                 let e = format!("Runtime Error. Branch on a variable that is neither 0 or 1. The value is: {}", num1);
-                return error(0, e);
+                return error(MAX_LINE, e);
             }
             }
         }
@@ -522,7 +523,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode, calls: &Vec<Func
             1 => {instr_pointer += 1;}
             _ => {
                 let e = format!("Runtime Error. Branch on a variable that is neither 0 or 1. The value is: {}", num1);
-                return error(0, e);
+                return error(MAX_LINE, e);
             }
             }
         }
@@ -544,10 +545,6 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode, calls: &Vec<Func
         Bytecode::Return(src1) => {
             let num = read_integer_value(&variables, src1);
             return Ok(num);
-        }
-
-        _ => {
-            todo!();
         }
 
         }
@@ -628,7 +625,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
         } else {
              let id = get_id(function);
              function.variables.insert(ident.clone(), VariableType::IntVar(id));
-             bytecode = Bytecode::Int(Op::Var(id));
+             bytecode = Bytecode::Int(id);
         }
     }
 
@@ -654,7 +651,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
         } else {
              let id = get_id(function);
              function.variables.insert(ident.clone(), VariableType::ArrayVar(id, num));
-             bytecode = Bytecode::IntArray(Op::Var(id), Op::Num(num));
+             bytecode = Bytecode::IntArray(id, num);
         }
     }
 
@@ -738,7 +735,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
     IRTok::In => {
         *idx += 1;
         let src = match next_result(*serialized_line, tokens, idx)? {
-        IRTok::Var(ident) => lookup_integer_variable_id(*serialized_line, function, ident)?,
+        IRTok::Var(ident) => lookup_variable_dest_id(*serialized_line, function, ident)?,
         _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%in variable'")),
         };
         bytecode = Bytecode::In(src);
@@ -985,6 +982,9 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             return error(*serialized_line, format!("label {} already defined.", name));
         }
         bytecode = Bytecode::Label(line);
+        if !matches!(peek_result(*serialized_line, tokens, *idx)?, IRTok::EndInstr) {
+            return error(*serialized_line, format!("invalid opcode '{}'. labels can be declared using '%label'", name));
+        }
     }
 
     IRTok::BranchIf => {
@@ -1056,7 +1056,7 @@ fn addr_code3(serialized_line: usize, function: &FunctionBytecode, tokens: &Vec<
     };
 
     if !matches!(next_result(serialized_line, tokens, idx)?, IRTok::Comma) {
-        return error(serialized_line, String::from("invalid 3-address code. expected comma."));
+        return error(serialized_line, String::from("invalid instruction. expected comma between dest and src1."));
     }
     
     let src1 = match next_result(serialized_line, tokens, idx)? {
@@ -1066,7 +1066,7 @@ fn addr_code3(serialized_line: usize, function: &FunctionBytecode, tokens: &Vec<
     };
 
     if !matches!(next_result(serialized_line, tokens, idx)?, IRTok::Comma) {
-        return error(serialized_line, String::from("invalid 3-address code. expected comma."));
+        return error(serialized_line, String::from("invalid instruction. expected comma between src1 and src2."));
     }
 
     let src2 = match next_result(serialized_line, tokens, idx)? {
@@ -1445,7 +1445,7 @@ fn read_memory(variables: &HashMap<i32, i32>, arrays: &HashMap<i32, Vec<i32>>, r
         if variable < array.len() {
             Ok(array[variable])
         } else {
-            error(0, format!("Array out of bounds. Index {}. Array Length {}.", variable, array.len()))
+            error(MAX_LINE, format!("Array out of bounds. Index {}. Array Length {}.", variable, array.len()))
         }
     }
     }
@@ -1460,12 +1460,12 @@ enum Bytecode {
     Label(usize),
 
     // declarations.
-    Int(Op),
-    IntArray(Op, Op),
+    Int(i32),
+    IntArray(i32, i32),
 
     // input/output routines.
     Out(Op),
-    In(Op),
+    In(i32),
 
     // mathematical operators.
     Mov(MemWrite, MemRead),
