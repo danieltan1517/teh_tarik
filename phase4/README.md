@@ -97,6 +97,13 @@ Here is the entire instruction set for the IR, if you need a refresher of what t
 | %branch_if var, %label    | jumps to '%label' if var is 1. Does nothing if var is 0                          |
 | %branch_ifn var, %label   | jumps to '%label' if var is 0. Does nothing if var is 1                          |
 
+IR instructions take up exactly one line per instruction. You cannot output multiple IR instructions on a single line. 
+Anything after the semicolon `;` will be treated as a comment.
+The semicolon denotes a comment that goes until the end of the line.
+```
+%add c, a, b; adding 'a' and 'b' to get 'c'
+```
+
 ### Generated Example IR Code
 
 Here are some examples of possible generated IR outputs. One can generate any IR code for the given code, as
