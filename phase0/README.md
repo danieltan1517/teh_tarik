@@ -327,6 +327,33 @@ fn main() {
 To run your program with commandline arguments `arg1` `arg2` arg3`, type `cargo run arg1 arg2 arg3` to execute your program
 with the commandline arguments.
 
+### Opening and read the entire file
+
+Code to open and read the entire file. This is used to get the all the high level programming language code
+from the file.
+
+```
+use std::fs;
+
+fn main() {
+    let filename = "file.txt";
+    let code = match fs::read_to_string(filename) {
+    Err(error) => {
+        println!("**Error. File \"{}\": {}", filename, error);
+        return;
+    }
+
+    Ok(code) => {
+        code
+    } 
+
+    };
+
+    println!("Code:");
+    println!("{}", code);
+}
+```
+
 ### Testing
 
 Testing different parts of software and testing parts of software as a whole is a key way of showing software robustness.
