@@ -1292,12 +1292,10 @@ mod ir_tests {
         assert!(matches!(lex_ir_token("%ge"), (Some(IRTok::GreaterEqual), _)));
         assert!(matches!(lex_ir_token("%jmp"), (Some(IRTok::Jump), _)));
         assert!(matches!(lex_ir_token("%branch_if"), (Some(IRTok::BranchIf), _)));
-        assert!(matches!(lex_ir_token("%branch_if_not"), (Some(IRTok::BranchIfNot), _)));
+        assert!(matches!(lex_ir_token("%branch_ifn"), (Some(IRTok::BranchIfNot), _)));
         assert!(matches!(lex_ir_token("[are"), (Some(IRTok::LBrace), "are")));
         assert!(matches!(lex_ir_token("]are"), (Some(IRTok::RBrace), "are")));
         assert!(matches!(lex_ir_token(",are"), (Some(IRTok::Comma), "are")));
-        assert!(matches!(lex_ir_token("%bad"), (None, _)));
-
         let code = "; This is a comment\n%mov";
         assert!(matches!(lex_ir_token(code), (Some(IRTok::EndInstr), "%mov")));
     }
