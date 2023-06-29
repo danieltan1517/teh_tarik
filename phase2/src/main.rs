@@ -29,7 +29,7 @@ fn main() {
 
     };
 
-    let tokens = match lex(&code) {
+    let (tokens, locations) = match lex(&code) {
     Err(error_message) => {
         println!("**Error**");
         println!("----------------------");
@@ -50,7 +50,20 @@ fn main() {
     }
 
     Err(e) => {
-        println!("{e}");
+
+        if tokens.len() == 0 {
+            println!("No code has been provided.");
+        } else if index >= tokens.len() {
+            index = tokens.len() - 1;
+            let loc = &locations[index];
+            println!("Error at line {}:{}.", loc.line_num, loc.col_num);
+            println!("{e}");
+        } else {
+            index -= 1;
+            let loc = &locations[index];
+            println!("Error at line {}:{}.", loc.line_num, loc.col_num);
+            println!("{e}");
+        }
     }
 
     }
@@ -71,8 +84,15 @@ enum Token {
   EndOfFile,
 }
 
-fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
+// line of code
+struct Loc {
+    line_num: i32,
+    col_num: i32,
+}
+
+fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
     let mut tokens: Vec<Token> = vec![];
+    let mut loc = vec![];
     let mut token_start: usize = 0;
     let mut token_end:   usize = 0;
     let mut line_num:    i32   = 1;
@@ -99,6 +119,7 @@ fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
             } else {
                 let number = create_number(token_start, token_end, code);
                 tokens.push(Token::Num(number));
+                loc.push(Loc{line_num:line_num, col_num:col_num});
                 StateMachine::Init
             }
         }
@@ -112,13 +133,34 @@ fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
 
         StateMachine::Init => {
              match character {
-             '+' => tokens.push(Token::Plus),
-             '-' => tokens.push(Token::Subtract),
-             '*' => tokens.push(Token::Multiply),
-             '/' => tokens.push(Token::Divide),
-             '%' => tokens.push(Token::Modulus),
-             '(' => tokens.push(Token::LeftParen),
-             ')' => tokens.push(Token::RightParen),
+             '+' => {
+                 tokens.push(Token::Plus);
+                 loc.push(Loc{line_num:line_num, col_num:col_num});
+             }
+             '-' => {
+                 tokens.push(Token::Subtract);
+                 loc.push(Loc{line_num:line_num, col_num:col_num});
+             }
+             '*' => {
+                 tokens.push(Token::Multiply);
+                 loc.push(Loc{line_num:line_num, col_num:col_num});
+             }
+             '/' => {
+                 tokens.push(Token::Divide);
+                 loc.push(Loc{line_num:line_num, col_num:col_num});
+             }
+             '%' => {
+                 tokens.push(Token::Modulus);
+                 loc.push(Loc{line_num:line_num, col_num:col_num});
+             }
+             '(' => {
+                 tokens.push(Token::LeftParen);
+                 loc.push(Loc{line_num:line_num, col_num:col_num});
+             }
+             ')' => {
+                 tokens.push(Token::RightParen);
+                 loc.push(Loc{line_num:line_num, col_num:col_num});
+             }
               _  => {
                  if !character.is_whitespace() {
                      let ident = &code[token_start..token_end];
@@ -145,10 +187,12 @@ fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
     if matches!(state_machine, StateMachine::Number) {
         let number = create_number(token_start, token_end, code);
         tokens.push(Token::Num(number));
+        loc.push(Loc{line_num:line_num, col_num:col_num});
     }
 
     tokens.push(Token::EndOfFile);
-    return Ok(tokens);
+    loc.push(Loc{line_num:line_num, col_num:col_num});
+    return Ok((tokens, loc));
 
     fn create_number(start: usize, end: usize, code: &str) -> i32 {
         // this code should correctly parse because the lexer verified that this is correct.
@@ -236,7 +280,6 @@ fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i
        match peek_error(tokens, *index)? {
        Token::Multiply => {
           *index += 1;
-          let _answer = parse_term(tokens, index)?;
        }
 
        Token::Divide => {
@@ -300,7 +343,7 @@ mod tests {
     }
 
     fn parse_expression_string(expression: &str) -> i32 {
-        let toks = lex(expression).unwrap();
+        let (toks, _) = lex(expression).unwrap();
         parse_expression(&toks, &mut 0).unwrap()
     }
 }
