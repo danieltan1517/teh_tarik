@@ -292,9 +292,13 @@ fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i
           *index += 1;
           let _answer = parse_term(tokens, index)?;
        }
+  
+       Token::EndOfFile => {
+           break;
+       }
 
        _ => { 
-           break; 
+           return Err(Box::from("invalid expression")); 
        }
 
        };
