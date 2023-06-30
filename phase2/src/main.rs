@@ -280,6 +280,7 @@ fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i
        match peek_error(tokens, *index)? {
        Token::Multiply => {
           *index += 1;
+          let _answer = parse_term(tokens, index)?;
        }
 
        Token::Divide => {
