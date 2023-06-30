@@ -11,7 +11,7 @@ uses a rich type system to allow Rust to formally verify the correctness of a pr
 
 [Documentation for the Rust Programming Language](https://www.rust-lang.org/learn)
 
-Rust uses a Borrow Checker to verify that software memory errors do not occur. Here
+Rust has a Borrow Checker to verify that software memory errors do not occur. Here
 are the basic, simple rules of the borrow checker:
 * Each value in Rust has a variable that is the owner
 * There is only one mutable reference to a variable at a time
@@ -171,6 +171,16 @@ fn function_with_ref(num: &mut i32) {
     *num += 200;
     println!("num: &i32 = {}", num);
 }
+```
+
+### Borrow Checker
+
+Rust requires that there is only one mutable reference to a variable at a time. That means that having two mutable references is illegal is Rust. As a basic example, the following code is illegal because `ptr` and `ptr2` are both borrowing `num` at the same time. Becuase `ptr` and `ptr2` are both mutable references, this code is illegal in Rust:
+
+```
+let mut num: i32 = 100;
+let ptr: &mut i32 = &mut num;
+let ptr2: &mut i32 = &mut num; // <- illegal. second mutable borrow
 ```
 
 ### Pattern Matching
