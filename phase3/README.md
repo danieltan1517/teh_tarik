@@ -397,10 +397,13 @@ func mul(int a, int b) {
 func main() {
     int a;
     int b;
-    a = add(10, 2);
-    print(a);
-    b = mul(a, a + b);
-    print(b);
+    int c;
+    a = 10;
+    b = 2;
+    c = add(a, b);
+    print(c);
+    c = mul(c, a + b);
+    print(c);
 }
 ```
 
@@ -421,16 +424,19 @@ You can output the following IR:
 %func main()
 %int a
 %int b
+%int c
+%mov a, 10
+%mov b, 2
 %int _temp3
-%call _temp3, add(10, 2, )
-%mov a, _temp3
-%out a
+%call _temp3, add(a, b, )
+%mov c, _temp3
+%out c
 %int _temp4
 %add _temp4, a, b
 %int _temp5
-%call _temp5, mul(a, _temp4, )
-%mov b, _temp5
-%out b
+%call _temp5, mul(c, _temp4, )
+%mov c, _temp5
+%out c
 %endfunc
 ```
 
