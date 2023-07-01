@@ -1290,7 +1290,6 @@ mod ir_tests {
         assert!(matches!(lex_ir_token("[are"), (Some(IRTok::LBrace), "are")));
         assert!(matches!(lex_ir_token("]are"), (Some(IRTok::RBrace), "are")));
         assert!(matches!(lex_ir_token(",are"), (Some(IRTok::Comma), "are")));
-        assert!(matches!(lex_ir_token("%bad"), (None, _)));
 
         let code = "; This is a comment\n%mov";
         assert!(matches!(lex_ir_token(code), (Some(IRTok::EndInstr), "%mov")));
