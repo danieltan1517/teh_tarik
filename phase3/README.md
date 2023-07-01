@@ -109,6 +109,8 @@ for this class, we will only be generating a simple IR built for teaching studen
 be generating IR for a provided interpreter, and running that interpreter to run the generated IR. The
 interpreter is available in `compiler.rs`.
 
+**Pass the IR to the function `compile_and_run` as a string, and the interpreter will run the code for you.**
+
 Here is the entire instruction set IR for the interpreter you will be using to run the generated code:
 
 | Instruction               | Description                                                                      |
@@ -145,6 +147,36 @@ Anything after the semicolon `;` will be treated as a comment.
 The semicolon denotes a comment that goes until the end of the line.
 ```
 %add c, a, b; adding 'a' and 'b' to get 'c'
+```
+
+### Translating Expressions into IR
+
+Trivial Expressions such as `c = a + b;` can be translated trivially into `%add c, a, b` easily. However, more complex expressions, such as
+`d = a + b * c` requires special handling. `b * c` needs to be done before adding it to `a`, because expressions must follow operator 
+precedence. To do more complex expressions, store `b * c` in an intermediate register `temp` before adding it with `a` and getting `d`. For
+example, `d = a + b * c` can be translated as:
+
+```
+%int temp
+%mult temp, b, c   ; do b * c
+%add d, a, temp    ; do d = a + b * c
+```
+
+There are many ways to translate a complex expression into assembly (e.g. `d = c + a + b` can be done as `d = (c + a) + b` or `d = c + (a + b)`).
+As long as the answer to the expression remains the correct, any IR generated is fine.
+
+To handle complex expressions, break down the complex expressions into smaller expressions, generate the code 
+for the base case small expressions, and recursively generate the bigger expressions from the generated code of
+the small expressions.
+
+You can create an `Expression` struct to store the data from a subexpression. Use `code` to represent the generated code
+from a subexpression, and `name` can be used to represent the intermediate values that store the results of the subexpression.
+
+```
+struct Expression {
+  code: String,
+  name: String,
+}
 ```
 
 ### Generated Example IR Code
