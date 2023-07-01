@@ -300,7 +300,9 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode, calls: &Vec<Func
          }
 
          VariableType::ArrayVar(id, len) => {
-             arrays.insert(*id, create_array_of_zeroes(*len));
+             // create an array of zeroes.
+             let arr = vec![0i32; *len as usize];
+             arrays.insert(*id, arr);
          }
 
          }
@@ -551,14 +553,6 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode, calls: &Vec<Func
     }
 
     return Ok(0);
-}
-
-fn create_array_of_zeroes(len: i32) -> Vec<i32> {
-    let mut arr = vec![];
-    for _ in 0..len {
-        arr.push(0);
-    }
-    arr
 }
 
 fn lookup_integer_variable_id(line: usize, function: &FunctionBytecode, ident: &String) -> Result<Op, IRError> {
@@ -1296,6 +1290,8 @@ mod ir_tests {
         assert!(matches!(lex_ir_token("[are"), (Some(IRTok::LBrace), "are")));
         assert!(matches!(lex_ir_token("]are"), (Some(IRTok::RBrace), "are")));
         assert!(matches!(lex_ir_token(",are"), (Some(IRTok::Comma), "are")));
+        assert!(matches!(lex_ir_token("%bad"), (None, _)));
+
         let code = "; This is a comment\n%mov";
         assert!(matches!(lex_ir_token(code), (Some(IRTok::EndInstr), "%mov")));
     }
