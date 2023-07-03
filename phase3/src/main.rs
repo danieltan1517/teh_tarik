@@ -519,7 +519,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
             }
 
             let expr = parse_expression(tokens, index)?;
-            let code = format!("{}%in {}\n", expr.code, expr.name);
+            let code = format!("{}%input {}\n", expr.code, expr.name);
 
             if !matches!(next_error(tokens, index)?, Token::RightParen) {
                 return Err(Box::from("expect ')' closing statement"));
