@@ -134,7 +134,7 @@ Here is the entire instruction set IR for the interpreter you will be using to r
 | %gt   dest, src1, src2    | dest = src1 >  src2                                                              |
 | %ge   dest, src1, src2    | dest = src1 >= src2                                                              |
 | %out  value               | prints out the value to standard output                                          |
-| %in   value               | store an integer from standard input into 'value'                                |
+| %input value              | store an integer from standard input into 'value'                                |
 | %call dest, func(a,b)     | calls a function 'func' with parameters (a,b). Stores the return value in 'dest' |
 | %ret  value               | return 'value' from the function.                                                |
 | %label                    | declares a label '%label'. Used in branching code                                |

@@ -730,7 +730,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
         *idx += 1;
         let src = match next_result(*serialized_line, tokens, idx)? {
         IRTok::Var(ident) => lookup_variable_dest_id(*serialized_line, function, ident)?,
-        _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%in variable'")),
+        _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%input variable'")),
         };
         bytecode = Bytecode::In(src);
     }
@@ -1129,7 +1129,7 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
         "%call" => Some(Call),
         "%ret" => Some(Return),
         "%out" => Some(Out),
-        "%in" => Some(In),
+        "%input" => Some(In),
         "%mov" => Some(Mov),
         "%add" => Some(Add),
         "%sub" => Some(Sub),
@@ -1271,7 +1271,7 @@ mod ir_tests {
         assert!(matches!(lex_ir_token("%call"), (Some(IRTok::Call), _)));
         assert!(matches!(lex_ir_token("%ret"), (Some(IRTok::Return), _)));
         assert!(matches!(lex_ir_token("%out"), (Some(IRTok::Out), _)));
-        assert!(matches!(lex_ir_token("   %in"), (Some(IRTok::In), _)));
+        assert!(matches!(lex_ir_token("   %input"), (Some(IRTok::In), _)));
         assert!(matches!(lex_ir_token("%mov  "), (Some(IRTok::Mov), _)));
         assert!(matches!(lex_ir_token("%add"), (Some(IRTok::Add), _)));
         assert!(matches!(lex_ir_token("%sub"), (Some(IRTok::Sub), _)));
