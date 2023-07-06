@@ -304,7 +304,7 @@ fn peek<'a>(tokens: &'a Vec<Token>, index: usize) -> Option<&'a Token> {
     }
 }
 
-fn peek_error<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box<dyn Error>> {
+fn peek_result<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box<dyn Error>> {
     if index < tokens.len() {
         return Ok(&tokens[index])
     } else {
@@ -322,7 +322,7 @@ fn next<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Option<&'a Token> {
     }
 }
 
-fn next_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, Box<dyn Error>> {
+fn next_result<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, Box<dyn Error>> {
     if *index < tokens.len() {
         let ret = *index;
         *index += 1;
@@ -370,19 +370,19 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Bo
     }
 
     }
-    let func_ident = match next_error(tokens, index)? {
+    let func_ident = match next_result(tokens, index)? {
     Token::Ident(func_ident) => func_ident,
     _  => {return Err(Box::from("functions must have a function identifier"));}
     };
 
-    if !matches!( next_error(tokens, index)?, Token::LeftParen) {
+    if !matches!(next_result(tokens, index)?, Token::LeftParen) {
         return Err(Box::from("expected '('"));
     }
-    if !matches!( next_error(tokens, index)?, Token::RightParen) {
+    if !matches!(next_result(tokens, index)?, Token::RightParen) {
         return Err(Box::from("expected '('"));
     }
 
-    if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
+    if !matches!(next_result(tokens, index)?, Token::LeftCurly) {
         return Err(Box::from("expected '{'"));
     }
 
@@ -401,7 +401,7 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Bo
 
     code += "%endfunc\n\n";
 
-    if !matches!(next_error(tokens, index)?, Token::RightCurly) {
+    if !matches!(next_result(tokens, index)?, Token::RightCurly) {
       return Err(Box::from("expected '}'"));
     }
 
@@ -431,7 +431,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
 
         Token::Int => {
             *index += 1;
-            match next_error(tokens, index)? {
+            match next_result(tokens, index)? {
             Token::Ident(ident) => {
                 let statement = format!("%int {}\n", ident);
                 codenode = CodeNode::Code(statement);
@@ -451,7 +451,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
             // do code generation for while loops.
             let expr = parse_boolean_expr(tokens, index)?;
 
-            if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
+            if !matches!(next_result(tokens, index)?, Token::LeftCurly) {
                 return Err(Box::from("expect '(' closing statement"));
             }
 
@@ -467,7 +467,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
                 }
             }
 
-            if !matches!(next_error(tokens, index)?, Token::RightCurly) {
+            if !matches!(next_result(tokens, index)?, Token::RightCurly) {
                 return Err(Box::from("expect '(' closing statement"));
             }
 
@@ -477,7 +477,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
 
         Token::Ident(ident) => {
             *index += 1;
-            if !matches!(next_error(tokens, index)?, Token::Assign) {
+            if !matches!(next_result(tokens, index)?, Token::Assign) {
                 return Err(Box::from("expected '=' assignment operator"));
             }
             let expr = parse_expression(tokens, index)?;
@@ -494,13 +494,13 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
 
         Token::Print => {
             *index += 1;
-            if !matches!(next_error(tokens, index)?, Token::LeftParen) {
+            if !matches!(next_result(tokens, index)?, Token::LeftParen) {
                 return Err(Box::from("expect '(' closing statement"));
             }
 
             let expr = parse_expression(tokens, index)?;
             let code = format!("{}%out {}\n", expr.code, expr.name);
-            if !matches!(next_error(tokens, index)?, Token::RightParen) {
+            if !matches!(next_result(tokens, index)?, Token::RightParen) {
                 return Err(Box::from("expect ')' closing statement"));
             }
             codenode = CodeNode::Code(code);
@@ -508,14 +508,14 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
 
         Token::Read => {
             *index += 1;
-            if !matches!(next_error(tokens, index)?, Token::LeftParen) {
+            if !matches!(next_result(tokens, index)?, Token::LeftParen) {
                 return Err(Box::from("expect '(' closing statement"));
             }
 
             let expr = parse_expression(tokens, index)?;
             let code = format!("{}%input {}\n", expr.code, expr.name);
 
-            if !matches!(next_error(tokens, index)?, Token::RightParen) {
+            if !matches!(next_result(tokens, index)?, Token::RightParen) {
                 return Err(Box::from("expect ')' closing statement"));
             }
             codenode = CodeNode::Code(code);
@@ -527,7 +527,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
 
         }
 
-        if !matches!(next_error(tokens, index)?, Token::Semicolon) {
+        if !matches!(next_result(tokens, index)?, Token::Semicolon) {
             return Err(Box::from("expect ';' closing statement"));
         }
 
@@ -544,7 +544,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, B
 // "a - b"
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression, Box<dyn Error>> {
     let mut expr = parse_term(tokens, index)?;
-    let opcode = match peek_error(tokens, *index)? {
+    let opcode = match peek_result(tokens, *index)? {
     Token::Plus => "%add",
     Token::Subtract => "%sub",
     Token::Multiply => "%mult",
@@ -569,7 +569,7 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression
 }
 
 fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression, Box<dyn Error>> {
-    match next_error(tokens, index)? {
+    match next_result(tokens, index)? {
 
     Token::Ident(ident) => {
         let expr = Expression {
@@ -596,7 +596,7 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression, Box<
 
 fn parse_boolean_expr(tokens: &Vec<Token>, index: &mut usize) -> Result<Expression, Box<dyn Error>> {
     let expr1 = parse_term(tokens, index)?;
-    if !matches!(next_error(tokens, index)?, Token::Less) {
+    if !matches!(next_result(tokens, index)?, Token::Less) {
         return Err(Box::from("expected '<' less operator."));
     }
     let expr2 = parse_term(tokens, index)?;
