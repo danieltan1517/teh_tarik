@@ -219,7 +219,7 @@ fn peek<'a>(tokens: &'a Vec<Token>, index: usize) -> Option<&'a Token> {
     }
 }
 
-fn peek_error<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box<dyn Error>> {
+fn peek_result<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box<dyn Error>> {
     if index < tokens.len() {
         return Ok(&tokens[index])
     } else {
@@ -239,7 +239,7 @@ fn next<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Option<&'a Token> {
     }
 }
 
-fn next_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, Box<dyn Error>> {
+fn next_result<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, Box<dyn Error>> {
     if *index < tokens.len() {
         let ret = *index;
         *index += 1;
@@ -252,7 +252,7 @@ fn next_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<dyn Error>> {
     let mut _ans = parse_multiply_expression(tokens, index)?;
     loop {
-       match peek_error(tokens, *index)? {
+       match peek_result(tokens, *index)? {
 
        Token::Plus => {
            *index += 1;
@@ -264,8 +264,12 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<d
            let _answer = parse_multiply_expression(tokens, index)?;
        }
 
+       Token::EndOfFile => {
+           break;
+       }
+
        _ => { 
-           break; 
+           return Err(Box::from("invalid expression."));
        }
 
        };
@@ -277,7 +281,8 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<d
 fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<dyn Error>> {
     let mut _ans = parse_term(tokens, index)?;
     loop {
-       match peek_error(tokens, *index)? {
+       println!("{:?}", peek_result(tokens, *index)?);
+       match peek_result(tokens, *index)? {
        Token::Multiply => {
           *index += 1;
           let _answer = parse_term(tokens, index)?;
@@ -297,8 +302,8 @@ fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i
            break;
        }
 
-       _ => { 
-           return Err(Box::from("invalid expression")); 
+       _ => {
+           break;
        }
 
        };
@@ -309,7 +314,7 @@ fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i
 }
 
 fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<dyn Error>> {
-    match next_error(tokens, index)? {
+    match next_result(tokens, index)? {
 
     Token::Num(num) => {
         return Ok(*num);
@@ -317,11 +322,15 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<dyn Err
 
     Token::LeftParen => {
         let answer = parse_expression(tokens, index)?;
-        if !matches!(next_error(tokens, index)?, Token::RightParen) {
+        if !matches!(next_result(tokens, index)?, Token::RightParen) {
             return Err(Box::from("expected ')' parenthesis"));
         }
 
         return Ok(answer);
+    }
+
+    Token::EndOfFile => {
+        return Ok(0);
     }
 
     _ => {

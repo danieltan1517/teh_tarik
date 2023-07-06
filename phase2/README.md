@@ -128,7 +128,7 @@ fn peek<'a>(tokens: &'a Vec<Token>, index: usize) -> Option<&'a Token> {
     }
 }
 
-fn peek_error<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box<dyn Error>> {
+fn peek_result<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box<dyn Error>> {
     if index < tokens.len() {
         return Ok(&tokens[index])
     } else {
@@ -146,7 +146,7 @@ fn next<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Option<&'a Token> {
     }
 }
 
-fn next_error<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, Box<dyn Error>> {
+fn next_result<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, Box<dyn Error>> {
     if *index < tokens.len() {
         let ret = *index;
         *index += 1;
