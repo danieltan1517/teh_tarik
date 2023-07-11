@@ -8,9 +8,6 @@ use std::env;
 // used to interact with the file system
 use std::fs;
 
-// used for error handling.
-use std::error::Error;
-
 fn main() {
 
     // Let us get commandline arguments and store them in a Vec<String>
@@ -86,10 +83,10 @@ enum Token {
 
 // In Rust, you can model the function behavior using the type system.
 // https://doc.rust-lang.org/std/result/
-// Result < Vec<Token>, Box<dyn Error>>
+// Result < Vec<Token>, String>
 // means that this function can either return:
 // - A list of tokens as a Vec<Token>
-// - Or an error message
+// - Or an error message represented as a string
 // If there is an error, it will return an error
 // If successful, it will return Vec<Token>
 // A Result is an enum like this:
@@ -101,7 +98,7 @@ enum Token {
 
 // This is a lexer that parses numbers and math operations
 // try to add identifier parsing to this lexer.
-fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
+fn lex(code: &str) -> Result<Vec<Token>, String> {
     let mut tokens: Vec<Token> = vec![];
     let mut token_start: usize = 0;
     let mut token_end:   usize = 0;
@@ -152,7 +149,7 @@ fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
                  if !character.is_whitespace() {
                      let ident = &code[token_start..token_end];
                      let message = format!("Error at line {}:{}. Unidentified symbol '{}'", line_num, col_num, ident);
-                     return Err(Box::from(message));
+                     return Err(message);
                  }
              }
 
