@@ -11,6 +11,7 @@
 | Sub                   | x - y        |
 | Multiply              | x * y        |
 | Divide                | x / y        |
+| Modulus               | x % y        |
 | Less Than             | x < y        |
 | Less Than Equal       | x <= y       |
 | Equality              | x == y       |
