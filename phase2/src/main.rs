@@ -1,6 +1,5 @@
 use std::env;
 use std::fs;
-use std::error::Error;
 
 fn main() {
     // Let us get commandline arguments and store them in a Vec<String>
@@ -90,7 +89,7 @@ struct Loc {
     col_num: i32,
 }
 
-fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
+fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), String> {
     let mut tokens: Vec<Token> = vec![];
     let mut loc = vec![];
     let mut token_start: usize = 0;
@@ -165,7 +164,7 @@ fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), Box<dyn Error>> {
                  if !character.is_whitespace() {
                      let ident = &code[token_start..token_end];
                      let message = format!("Error at line {}:{}. Unidentified symbol '{}'", line_num, col_num, ident);
-                     return Err(Box::from(message));
+                     return Err(message);
                  }
              }
 
@@ -219,11 +218,11 @@ fn peek<'a>(tokens: &'a Vec<Token>, index: usize) -> Option<&'a Token> {
     }
 }
 
-fn peek_result<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box<dyn Error>> {
+fn peek_result<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, String> {
     if index < tokens.len() {
         return Ok(&tokens[index])
     } else {
-        return Err(Box::from("expected a token, but got nothing"))
+        return Err(String::from("expected a token, but got nothing"))
     }
 }
 
@@ -239,17 +238,17 @@ fn next<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Option<&'a Token> {
     }
 }
 
-fn next_result<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, Box<dyn Error>> {
+fn next_result<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, String> {
     if *index < tokens.len() {
         let ret = *index;
         *index += 1;
         return Ok(&tokens[ret])
     } else {
-        return Err(Box::from("expected a token, but got nothing"))
+        return Err(String::from("expected a token, but got nothing"))
     }
 }
 
-fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<dyn Error>> {
+fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, String> {
     let mut _ans = parse_multiply_expression(tokens, index)?;
     loop {
        match peek_result(tokens, *index)? {
@@ -269,7 +268,7 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<d
        }
 
        _ => { 
-           return Err(Box::from("invalid expression."));
+           return Err(String::from("invalid expression."));
        }
 
        };
@@ -278,7 +277,7 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<d
     return Ok(_ans);
 }
 
-fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<dyn Error>> {
+fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, String> {
     let mut _ans = parse_term(tokens, index)?;
     loop {
        match peek_result(tokens, *index)? {
@@ -312,7 +311,7 @@ fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i
     return Ok(0);
 }
 
-fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<dyn Error>> {
+fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, String> {
     match next_result(tokens, index)? {
 
     Token::Num(num) => {
@@ -322,7 +321,7 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<dyn Err
     Token::LeftParen => {
         let answer = parse_expression(tokens, index)?;
         if !matches!(next_result(tokens, index)?, Token::RightParen) {
-            return Err(Box::from("expected ')' parenthesis"));
+            return Err(String::from("expected ')' parenthesis"));
         }
         return Ok(answer);
     }
@@ -332,7 +331,7 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, Box<dyn Err
     }
 
     _ => {
-        return Err(Box::from("invalid expression"));
+        return Err(String::from("invalid expression"));
     }
 
     }

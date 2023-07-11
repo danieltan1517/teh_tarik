@@ -128,11 +128,11 @@ fn peek<'a>(tokens: &'a Vec<Token>, index: usize) -> Option<&'a Token> {
     }
 }
 
-fn peek_result<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, Box<dyn Error>> {
+fn peek_result<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, String> {
     if index < tokens.len() {
         return Ok(&tokens[index])
     } else {
-        return Err(Box::from("expected a token, but got nothing"))
+        return Err(String::from("expected a token, but got nothing"))
     }
 }
 
@@ -146,13 +146,13 @@ fn next<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Option<&'a Token> {
     }
 }
 
-fn next_result<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, Box<dyn Error>> {
+fn next_result<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, String> {
     if *index < tokens.len() {
         let ret = *index;
         *index += 1;
         return Ok(&tokens[ret])
     } else {
-        return Err(Box::from("expected a token, but got nothing"))
+        return Err(String::from("expected a token, but got nothing"))
     }
 }
 ```
@@ -181,7 +181,7 @@ Can you figure out how to compute the correct answer to expression given the ope
 Start by creating a function called `parse_program`. It will take in a list of tokens and index marking where the parser is.
 It will return a return a `Result`, where `Result` can either be `Err` or it will be fine.
 ```
-fn parse_program(tokens: &Vec<Tokens>, index: &mut usize) -> Result< (), Box<dyn Error>> {
+fn parse_program(tokens: &Vec<Tokens>, index: &mut usize) -> Result< (), String> {
     loop {
         let val = parse_function(tokens, index)?;
         match val {
@@ -211,7 +211,7 @@ enum CodeNode {
    Data,    // for putting function data.
 }
 
-fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Box < dyn Error>> {
+fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, String> {
     
     match next(tokens, index) {
     None => {
@@ -219,7 +219,7 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Bo
     }
     Some(token) => {
         if !matches!(token, Token::Func) {
-            return Err(Box::from("functions must begin with func"));
+            return Err(String::from("functions must begin with func"));
         }
     }
 
@@ -227,20 +227,20 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Bo
 
     let func_ident = match next_error(tokens, index)? {
     Token::Ident(func_ident) => func_ident,
-    _  => {return Err(Box::from("functions must have a function identifier"));}
+    _  => {return Err(String::from("functions must have a function identifier"));}
     };
 
     if !matches!( next_error(tokens, index)?, Token::LeftParen) {
-        return Err(Box::from("expected '('"));
+        return Err(String::from("expected '('"));
     }
 
     if !matches!( next_error(tokens, index)?, Token::RightParen) {
-        return Err(Box::from("expected ')'"));
+        return Err(String::from("expected ')'"));
     }
 
 
     if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
-        return Err(Box::from("expected '{'"));
+        return Err(String::from("expected '{'"));
     }
 
     loop {
@@ -257,7 +257,7 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, Bo
     }
 
     if !matches!(next_error(tokens, index)?, Token::RightCurly) {
-      return Err(Box::from("expected '}'"));
+      return Err(String::from("expected '}'"));
     }
 
     return Ok(CodeNode::Data);
