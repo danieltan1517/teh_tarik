@@ -34,7 +34,7 @@ as basic math operations such as `+`, `-`, `*`, `/`. A lexer can be represented 
 a finite automata using a `StateMachine` enum to represent the different states.
 
 ```
-fn lex(code: &str) -> Result<Vec<Token>, Box<dyn Error>> {
+fn lex(code: &str) -> Result<Vec<Token>, String> {
     let mut tokens: Vec<Token> = vec![];
     let mut token_start: usize = 0;
     let mut token_end:   usize = 0;
@@ -179,7 +179,7 @@ Note that there are multiple ways to do this, and this is not the only way to cl
 Signs can be handled in a similar way to identifiers. Just add a state to the state machine for sign tokens.
 
 ```
-fn create_sign(start: usize, end: usize, code: &str) -> Result<Token, Box<dyn Error>> {
+fn create_sign(start: usize, end: usize, code: &str) -> Result<Token, String> {
     let token = &code[start..end];
     match token {
     "<" => Ok(Token::Less),
