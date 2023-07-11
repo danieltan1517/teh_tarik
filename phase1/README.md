@@ -85,7 +85,7 @@ fn lex(code: &str) -> Result<Vec<Token>, String> {
                  if !character.is_whitespace() {
                      let ident = &code[token_start..token_end];
                      let message = format!("Error at line {}:{}. Unidentified symbol '{}'", line_num, col_num, ident);
-                     return Err(Box::from(message));
+                     return Err(String::from(message));
                  }
              }
 
@@ -189,7 +189,7 @@ fn create_sign(start: usize, end: usize, code: &str) -> Result<Token, String> {
     "==" => Ok(Token::Equality),
     "=" => Ok(Token::Assign),
     "!=" => Ok(Token::NotEqual),
-    _ => return Err(Box::from(format!("invalid symbol {}", token))),
+    _ => return Err(String::from(format!("invalid symbol {}", token))),
 }
 }
 ```
