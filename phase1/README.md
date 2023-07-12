@@ -189,7 +189,7 @@ fn create_sign(start: usize, end: usize, code: &str) -> Result<Token, String> {
     "==" => Ok(Token::Equality),
     "=" => Ok(Token::Assign),
     "!=" => Ok(Token::NotEqual),
-    _ => return Err(String::from(format!("invalid symbol {}", token))),
+    _ => return Err(format!("invalid symbol {}", token)),
 }
 }
 ```
