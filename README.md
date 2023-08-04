@@ -12,6 +12,8 @@ This programming language is named after Teh Tarik, which is the national drink 
 
 [Phase 2: Building a Parser](https://github.com/danieltan1517/teh_tarik/tree/master/phase2)
 
+[Phase 2: Example Parser in Rust](https://github.com/danieltan1517/teh_tarik/tree/master/phase2_example)
+
 [Phase 3: Simple Code Generation](https://github.com/danieltan1517/teh_tarik/tree/master/phase3)
 
 [Phase 4: Complex Code Generation](https://github.com/danieltan1517/teh_tarik/tree/master/phase4)
