@@ -451,7 +451,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, S
             let expr = parse_boolean_expr(tokens, index)?;
 
             if !matches!(next_result(tokens, index)?, Token::LeftCurly) {
-                return Err(String::from("expect '(' closing statement"));
+                return Err(String::from("expect '{' left curly brace token"));
             }
 
             // parsing the while loop body
@@ -467,7 +467,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, S
             }
 
             if !matches!(next_result(tokens, index)?, Token::RightCurly) {
-                return Err(String::from("expect '(' closing statement"));
+                return Err(String::from("expect '}' right curly brace token"));
             }
 
             codenode = CodeNode::Code(String::from(""));
