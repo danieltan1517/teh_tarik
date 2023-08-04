@@ -181,15 +181,17 @@ Can you figure out how to compute the correct answer to expression given the ope
 Start by creating a function called `parse_program`. It will take in a list of tokens and index marking where the parser is.
 It will return a return a `Result`, where `Result` can either be `Err` or it will be fine.
 ```
-fn parse_program(tokens: &Vec<Tokens>, index: &mut usize) -> Result< (), String> {
+fn parse_program(tokens: &Vec<Token>, index: &mut usize) -> Result<(), String> {
     loop {
-        let val = parse_function(tokens, index)?;
-        match val {
-        Function::Epsilon => {
+        match parse_function(tokens, index)? {
+        None => {
             break;
         }
+        Some(_) => {}
         }
     }
+
+    return Ok(());
 }
 ```
 
@@ -206,16 +208,18 @@ func main() {
 We can write `parse_function` like this:
 
 ```
-enum CodeNode {
-   Epsilon, // for denoting that a code is null
-   Data,    // for putting function data.
-}
+// parse function such as:
+// func main(int a, int b) {
+//    # ... statements here...
+//    # ...
+// }
+// a loop is done to handle statements.
 
-fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, String> {
+fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<Option<()>, String> {
     
     match next(tokens, index) {
     None => {
-        return Ok(CodeNode::Epsilon);
+        return Ok(None);
     }
     Some(token) => {
         if !matches!(token, Token::Func) {
@@ -224,43 +228,70 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, St
     }
 
     }
-
-    let func_ident = match next_error(tokens, index)? {
-    Token::Ident(func_ident) => func_ident,
+    match next_result(tokens, index)? {
+    Token::Ident(_) => {},
     _  => {return Err(String::from("functions must have a function identifier"));}
     };
 
-    if !matches!( next_error(tokens, index)?, Token::LeftParen) {
+    if !matches!( next_result(tokens, index)?, Token::LeftParen) {
         return Err(String::from("expected '('"));
     }
 
-    if !matches!( next_error(tokens, index)?, Token::RightParen) {
-        return Err(String::from("expected ')'"));
+    loop {
+       match next_result(tokens, index)? {
+
+       Token::RightParen => {
+           break;
+       }
+
+       Token::Int => {
+           match next_result(tokens, index)? {
+           Token::Ident(_) => {
+               match peek_result(tokens, *index)? {
+               Token::Comma => {
+                   *index += 1;
+               }
+               Token::RightParen => {}
+               _ => {
+                   return Err(String::from("expected ',' or ')'"));
+               }
+
+               }
+           }
+           _ => {
+                return Err(String::from("expected ident function parameter"));
+           }
+
+           }
+       }
+
+       _ => {
+           return Err(String::from("expected 'int' keyword or ')' token"));
+       }
+
+       }
     }
 
 
-    if !matches!(next_error(tokens, index)?, Token::LeftCurly) {
+    if !matches!(next_result(tokens, index)?, Token::LeftCurly) {
         return Err(String::from("expected '{'"));
     }
 
     loop {
         match parse_statement(tokens, index)? {
-        CodeNode::Epsilon => {
+        None => {
             break;
         }
-
-        CodeNode::Data => {
-            // do something.
-        }
-
+        Some(()) => {}
         }
     }
 
-    if !matches!(next_error(tokens, index)?, Token::RightCurly) {
+
+    if !matches!(next_result(tokens, index)?, Token::RightCurly) {
       return Err(String::from("expected '}'"));
     }
 
-    return Ok(CodeNode::Data);
+    return Ok(Some(()));
 }
 ```
 
