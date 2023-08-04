@@ -759,7 +759,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
          
                      }
                 } else {
-                     let f = format!("invalid instruction. identifier '{}' declared too many times", ident);
+                     let f = format!("invalid instruction. identifier '{}' has not been declared", ident);
                      return error(*serialized_line, f);
                 }
             }
