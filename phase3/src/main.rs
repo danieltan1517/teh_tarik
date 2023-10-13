@@ -99,11 +99,6 @@ enum Token {
   Num(i32),
 }
 
-enum CodeNode {
-  Code(String),
-  Epsilon,
-}
-
 struct Expression {
   code: String,
   name: String,
@@ -331,10 +326,10 @@ fn parse_program(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Strin
     let mut generated_code = String::from("");
     loop {
         match parse_function(tokens, index)? {
-        CodeNode::Epsilon => {
+        None => {
             break;
         }
-        CodeNode::Code(func_code) => {
+        Some(func_code) => {
             generated_code += &func_code;
         }
         }
@@ -350,11 +345,11 @@ fn parse_program(tokens: &Vec<Token>, index: &mut usize) -> Result<String, Strin
 // }
 // a loop is done to handle statements.
 
-fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, String> {
+fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<Option<String>, String> {
     
     match next(tokens, index) {
     None => {
-        return Ok(CodeNode::Epsilon);
+        return Ok(None);
     }
     Some(token) => {
         if !matches!(token, Token::Func) {
@@ -424,10 +419,10 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, St
 
     loop {
         match parse_statement(tokens, index)? {
-        CodeNode::Epsilon => {
+        None => {
             break;
         }
-        CodeNode::Code(statement) => {
+        Some(statement) => {
             code += &statement;
         }
         }
@@ -439,7 +434,7 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, St
       return Err(String::from("expected '}'"));
     }
 
-    return Ok(CodeNode::Code(code));
+    return Ok(Some(code));
 }
 
 // parsing a statement such as:
@@ -449,18 +444,18 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, St
 // print(a)
 // read(a)
 // returns epsilon if '}'
-fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, String> {
+fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Option<String>, String> {
     match peek(tokens, *index) {
     None => {
-        return Ok(CodeNode::Epsilon);
+        return Ok(None);
     }
 
     Some(token) => {
-        let codenode: CodeNode;
+        let codenode: Option<String>;
         match token {
 
         Token::RightCurly => {
-            return Ok(CodeNode::Epsilon);
+            return Ok(None);
         }
 
         Token::Int => {
@@ -468,7 +463,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, S
             match next_result(tokens, index)? {
             Token::Ident(ident) => {
                 let statement = format!("%int {}\n", ident);
-                codenode = CodeNode::Code(statement);
+                codenode = Some(statement);
             }
 
             _ => {
@@ -485,14 +480,14 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, S
             }
             let expr = parse_expression(tokens, index)?;
             let code = format!("{}%mov {}, {}\n", expr.code, ident, expr.name);
-            codenode = CodeNode::Code(code);
+            codenode = Some(code);
         }
 
         Token::Return => {
             *index += 1;
             let expr = parse_expression(tokens, index)?;
             let code = format!("{}%ret {}\n", expr.code, expr.name);
-            codenode = CodeNode::Code(code);
+            codenode = Some(code);
         }
 
         Token::Print => {
@@ -506,7 +501,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, S
             if !matches!(next_result(tokens, index)?, Token::RightParen) {
                 return Err(String::from("expect ')' closing statement"));
             }
-            codenode = CodeNode::Code(code);
+            codenode = Some(code);
         }
 
         Token::Read => {
@@ -521,7 +516,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<CodeNode, S
             if !matches!(next_result(tokens, index)?, Token::RightParen) {
                 return Err(String::from("expect ')' closing statement"));
             }
-            codenode = CodeNode::Code(code);
+            codenode = Some(code);
         }
 
         _ => {
