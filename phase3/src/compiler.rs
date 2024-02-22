@@ -405,7 +405,12 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode, calls: &Vec<Func
         Bytecode::Mov(MemWrite::ArrayWrite(dest, index), src) => {
             let num = read_memory(&variables, &arrays, src)?;
             let dest = arrays.get_mut(dest).unwrap();
-            let i = read_integer_value(&variables, index) as usize;
+            let index = read_integer_value(&variables, index);
+            if index < 0 {
+                let e = format!("Runtime Error: Array out of bounds. Value {}. Array Length {}", index, dest.len());
+                return error(MAX_LINE, e);
+            }
+            let i = index as usize;
             if i < dest.len() {
                 dest[i] = num;
                 instr_pointer += 1;
@@ -1447,11 +1452,11 @@ fn read_memory(variables: &HashMap<i32, i32>, arrays: &HashMap<i32, Vec<i32>>, r
     MemRead::Number(number) => Ok(*number),
     MemRead::ArrayRead(id, index) => {
         let array = arrays.get(&id).unwrap();
-        let variable = read_integer_value(&variables, &index) as usize;
-        if variable < array.len() {
-            Ok(array[variable])
+        let variable = read_integer_value(&variables, &index);
+        if variable >= 0 && (variable as usize) < array.len() {
+            Ok(array[variable as usize])
         } else {
-            error(MAX_LINE, format!("Array out of bounds. Index {}. Array Length {}.", variable, array.len()))
+            error(MAX_LINE, format!("Runtime Error: Array out of bounds. Index {}. Array Length {}.", variable, array.len()))
         }
     }
     }
