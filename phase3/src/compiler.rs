@@ -46,9 +46,22 @@ const MAX_LINE: usize = 2000000;
 
 fn parse_ir(tokens: &Vec<IRTok>, idx: &mut usize) -> Result< Vec<FunctionBytecode>, IRError> {
     let mut serialized_line: usize = 1;
-    let mut vector = vec![];
+    let mut vector: Vec<FunctionBytecode> = vec![];
+    let mut has_main: bool = false;
     while let Some(bytecode) = parse_func_ir(&mut serialized_line, tokens, idx)? {
+        for func in &vector {
+          if func.name.eq(&bytecode.name) {
+            return error(MAX_LINE, format!("Error. Two functions with the same name {}", func.name));
+          }
+        }
+        if bytecode.name.eq("main") {
+          has_main = true;
+        }
         vector.push(bytecode);
+    }
+
+    if has_main == false {
+      return error(MAX_LINE, format!("Error. Generated code does not have a main."));
     }
 
     // todo: this is not the correct line numbers. but I dunno how to get better line numbers...
