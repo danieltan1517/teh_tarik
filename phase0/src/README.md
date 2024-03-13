@@ -2,6 +2,9 @@
 
 **Author(s):** John Newton, Michael Faraday, Tunku Abdul Rahman
 
+### Language Extension
+The Programming Language extension name is `*.tt` (e.g. `add.tt`, `function.tt`, etc.)
+
 ### Language Features
 
 | Language Feature      | Code Example |
@@ -59,6 +62,15 @@
 |!=                    | NotEqual     |
 |variable_name         | Ident        |
 |10311517              | Num          |
+
+### Variable Identifier Names
+
+Variables begin with an upper or lower case letters A-Z followed by a sequence of underscores or numbers. Examples include:
+```
+int variable_name;
+int var1;
+int october_31_1517;
+```
 
 ### Comments
 
