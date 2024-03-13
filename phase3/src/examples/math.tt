@@ -35,4 +35,10 @@ func main() {
   c = a % b;
   print(c);
 
+  # I leave 'complex expression' as an exercise for students.
+  # Complex Expression. (4 + 2) * 7
+  # a = 4;
+  # b = 7;
+  # c = (a + 2) * b;
+  # print(c);
 }
