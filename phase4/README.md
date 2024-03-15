@@ -41,29 +41,29 @@ There are 4 relevant instructions for doing branching and jumping. They are as f
 
 | Instruction               | Description                                                                      |
 |---------------------------|----------------------------------------------------------------------------------|
-| %label                    | declares a label '%label'. Used in branching code                                |
-| %jmp  %label              | jumps to '%label' unconditionally                                                |
-| %branch_if var, %label    | jumps to '%label' if var is 1. Does nothing if var is 0                          |
-| %branch_ifn var, %label   | jumps to '%label' if var is 0. Does nothing if var is 1                          |
+| :label                    | declares a label ':label'. Used in branching code                                |
+| %jmp  :label              | jumps to ':label' unconditionally                                                |
+| %branch_if var, :label    | jumps to ':label' if var is 1. Does nothing if var is 0                          |
+| %branch_ifn var, :label   | jumps to ':label' if var is 0. Does nothing if var is 1                          |
 
-Use `%label` to declare a point that someone can jump to. `%jmp` can be used to jump to the `%label`.
+Use `:label` to declare a point that someone can jump to. `%jmp` can be used to jump to the `:label`.
 
 By generating the following code, you can create an infinite loop:
 
 ```
 %func main() 
-%label
+:label
 %out 0
-%jmp %label
+%jmp :label
 %endfunc
 ```
 
 When running the IR, it should continue to print 0 until infinity.
 
-Use `%branch_if` to jump to the `%label` only if the `var` is 1. `%branch_if` will do nothing if
+Use `%branch_if` to jump to the `:label` only if the `var` is 1. `%branch_if` will do nothing if
 `var` is 0.
 
-`%branch_ifn` is the opposite: it only jumps to the `%label` if the `var` is 0. `%branch_ifn` will do
+`%branch_ifn` is the opposite: it only jumps to the `:label` if the `var` is 0. `%branch_ifn` will do
 nothing if the `var` is 1.
 
 Here is the entire instruction set for the IR, if you need a refresher of what the instructions are.
@@ -92,10 +92,10 @@ Here is the entire instruction set for the IR, if you need a refresher of what t
 | %input value              | store an integer from standard input into 'value'                                |
 | %call dest, func(a,b)     | calls a function 'func' with parameters (a,b). Stores the return value in 'dest' |
 | %ret  value               | return 'value' from the function.                                                |
-| %label                    | declares a label '%label'. Used in branching code                                |
-| %jmp  %label              | jumps to '%label' unconditionally                                                |
-| %branch_if var, %label    | jumps to '%label' if var is 1. Does nothing if var is 0                          |
-| %branch_ifn var, %label   | jumps to '%label' if var is 0. Does nothing if var is 1                          |
+| :label                    | declares a label ':label'. Used in branching code                                |
+| %jmp  :label              | jumps to ':label' unconditionally                                                |
+| %branch_if var, :label    | jumps to ':label' if var is 1. Does nothing if var is 0                          |
+| %branch_ifn var, :label   | jumps to ':label' if var is 0. Does nothing if var is 1                          |
 
 IR instructions take up exactly one line per instruction. You cannot output multiple IR instructions on a single line. 
 Anything after the semicolon `;` will be treated as a comment.
@@ -123,8 +123,8 @@ func main() {
     }
 }
 ```
-You can generate the follow IR. Note that `%jmp %loopbegin1` is used to jump to the beginning of the loop,
-marked `%loopbegin1`. We break out of the loop using `%branch_ifn _temp, %endloop1` to break out of the loop.
+You can generate the follow IR. Note that `%jmp :loopbegin1` is used to jump to the beginning of the loop,
+marked `:loopbegin1`. We break out of the loop using `%branch_ifn _temp, :endloop1` to break out of the loop.
 ```
 %func main()
 %int i
@@ -304,7 +304,7 @@ func main() {
 }
 ```
 
-You can generate the following IR. The IR uses `%jmp %endloop1` to implement a break statement.
+You can generate the following IR. The IR uses `%jmp :endloop1` to implement a break statement.
 
 ```
 %func main()
