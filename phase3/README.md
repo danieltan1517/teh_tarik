@@ -137,7 +137,7 @@ Here is the entire instruction set IR for the interpreter you will be using to r
 | %input value              | store an integer from standard input into 'value'                                |
 | %call dest, func(a,b)     | calls a function 'func' with parameters (a,b). Stores the return value in 'dest' |
 | %ret  value               | return 'value' from the function.                                                |
-| :label                    | declares a label '%label'. Used in branching code                                |
+| :label                    | declares a label ':label'. Used in branching code                                |
 | %jmp  :label              | jumps to ':label' unconditionally                                                |
 | %branch_if var, :label    | jumps to ':label' if var is 1. Does nothing if var is 0                          |
 | %branch_ifn var, :label   | jumps to ':label' if var is 0. Does nothing if var is 1                          |
