@@ -222,7 +222,7 @@ fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usi
                 if let Some(id) = labels_hash.get(label_name) {
                     function_bytecode.body[i] = Bytecode::Jmp(*id);
                 } else {
-                    return error(*serialized_line, format!("Error. invalid label {}", label_name));
+                    return error(i, format!("Error. invalid label {}", label_name));
                 }
             } else {
                 return error(*serialized_line, String::from("Internal Compiler Error."));
@@ -995,7 +995,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
         }
         bytecode = Bytecode::Label(line);
         if !matches!(peek_result(*serialized_line, tokens, *idx)?, IRTok::EndInstr) {
-            return error(*serialized_line, format!("invalid opcode '{}'. labels can be declared using '%label'", name));
+            return error(*serialized_line, format!("invalid opcode '{}'. labels can be declared using ':label'", name));
         }
     }
 
@@ -1016,7 +1016,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             bytecode = Bytecode::BranchIf(dest, *idx);
             *idx += 1;
         }
-        _ => return error(*serialized_line, String::from("%branch_if requires a label '%label'. (e.g. '%branch_if TF, %label')")),
+        _ => return error(*serialized_line, String::from("%branch_if requires a label ':label'. (e.g. '%branch_if TF, :label')")),
         }
     }
 
@@ -1037,13 +1037,17 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             bytecode = Bytecode::BranchIfn(dest, *idx);
             *idx += 1;
         }
-        _ => return error(*serialized_line, String::from("%branch_ifn requires a label '%label'. (e.g. '%branch_if TF, %label')")),
+        _ => return error(*serialized_line, String::from("%branch_ifn requires a label ':label'. (e.g. '%branch_ifn TF, :label')")),
         }
     }
 
     IRTok::EndFunc => {
         bytecode = Bytecode::End;
         return Ok(bytecode);
+    }
+
+    IRTok::InvalidInstruction(err) => {
+        return error(*serialized_line, format!("invalid instruction opcode '{err}'. instructions must begin with an opcode such as %mov, %add, %sub"));
     }
 
     _ => {
@@ -1132,6 +1136,7 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
     enum StateMachine {
         Initial,
         Lit,
+        Label,
         Ident,
         Num,
         Comments,
@@ -1163,8 +1168,7 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
         "%jmp" => Some(Jump),
         "%branch_if" => Some(BranchIf),
         "%branch_ifn" => Some(BranchIfNot),
-        _ => Some(Label(String::from(s))),
-
+        _ => Some(InvalidInstruction(String::from(s))),
         }
     }
 
@@ -1198,6 +1202,7 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
             }
             match c {
             '%' => StateMachine::Lit,
+            ':' => StateMachine::Label,
             ',' => return (Some(IRTok::Comma), &code[i + 1..]),
             '[' => return (Some(IRTok::LBrace), &code[i + 1..]),
             '(' => return (Some(IRTok::LParen), &code[i + 1..]),
@@ -1221,6 +1226,19 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
             }
 
             StateMachine::Lit
+        }
+
+        StateMachine::Label => {
+            if c == ',' || c == '\n' || c == ';' {
+                let tok = &code[..i];
+                return (Some(IRTok::Label(String::from(tok))), &code[i..]);
+            }
+            if c.is_whitespace() {
+                let tok = &code[..i];
+                return (Some(IRTok::Label(String::from(tok))), &code[i+1..]);
+            }
+
+            StateMachine::Label
         }
 
         StateMachine::Comments => {
@@ -1415,6 +1433,8 @@ enum IRTok {
     Plus,
 
     EndInstr,
+
+    InvalidInstruction(String),
 
     Num(i32),
     Var(String),
