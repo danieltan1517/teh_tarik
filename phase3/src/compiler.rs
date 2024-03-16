@@ -850,29 +850,29 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 
                     }
                 } else {
-                    return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10"));
+                    return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'"));
                 }
             }
 
-            _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10")),
+            _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'")),
             };
 
             if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Plus) {
-                return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10"));
+                return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'"));
             }
 
             let index = match next_result(*serialized_line, tokens, idx)? {
             IRTok::Var(id) => lookup_integer_variable_id(*serialized_line, function, id)?,
             IRTok::Num(num) => Op::Num(*num),
-            _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10")),
+            _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'")),
             };
 
             if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::RBrace) {
-                return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10"));
+                return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'"));
             }
 
             if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Comma) {
-                return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10"));
+                return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'"));
             }
 
             let src = match next_result(*serialized_line, tokens, idx)? {
@@ -888,7 +888,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
          
                      }
                 } else {
-                     let f = format!("invalid instruction. identifier '{}' declared too many times", ident);
+                     let f = format!("invalid instruction. identifier '{}' has not been defined.", ident);
                      return error(*serialized_line, f);
                 }
             }
@@ -982,7 +982,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             *idx += 1;
         }
 
-        _ => return error(*serialized_line, String::from("%jmp requires a label. such as '%jmp %label'")),
+        _ => return error(*serialized_line, String::from("%jmp requires a label such as '%jmp :label'")),
         }
     }
 
