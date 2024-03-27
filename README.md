@@ -2,6 +2,13 @@
 
 This programming language is named after Teh Tarik, which is the national drink of Malaysia.
 
+To use Rust on the UC Riverside School Server, you can do:
+```
+ssh your_net_id@cs152.cs.ucr.edu
+chmod 777 cs152.sh
+./cs152.sh
+```
+
 ## Table of Contents
 
 [Phase 0: Introduction to Rust](https://github.com/danieltan1517/teh_tarik/tree/master/phase0#introduction-to-the-rust-programming-language)

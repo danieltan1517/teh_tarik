@@ -23,6 +23,14 @@ There are many software programs that are unrepresentable when using a borrow ch
 turn off the borrow checker to represent those structures you can use `unsafe` to 
 represent those critical sections. Ideally, `unsafe` programs should be minimized.
 
+### Using Rust on the UC Riverside School Server
+To use Rust on the UC Riverside School Server, you can do:
+```
+ssh your_net_id@cs152.cs.ucr.edu
+chmod 777 cs152.sh
+./cs152.sh
+```
+
 ### Getting Started
 
 Create a new project with `cargo new compiler_project`.
