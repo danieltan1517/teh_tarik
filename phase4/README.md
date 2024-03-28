@@ -13,6 +13,8 @@ For Phase 4, you will be doing code generation for the following control flow st
 * Break and Continue
 * Nested While Loops
 
+You will also be doing semantic error checking (see the semantic error checking Phase 4 section)
+
 ### Reviewing Structured Programming
 
 In computer hardware, there is no such instruction corresponds to a "while" loop, and there is

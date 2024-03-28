@@ -16,6 +16,14 @@ will be done in Phase 4.**
 We are doing only "simple" code generation, that is code that contains linear control flow and starts from
 the top and ends at the bottom, with no branches or jumping around. 
 
+For Phase 3, you will be doing code generation for the following statements:
+* add
+* math 
+* array
+* function
+
+You will also be doing semantic error checking (see the semantic error checking Phase 3 section)
+
 ### Unsafe
 
 Documentation: [Unsafe](https://doc.rust-lang.org/std/keyword.unsafe.html)
