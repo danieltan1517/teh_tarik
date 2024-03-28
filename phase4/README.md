@@ -479,4 +479,22 @@ The output of primes should be:
 97
 ```
 
+### Semantic Error Checking
+
+In addition to doing code generation for if statements, while loops, and branching statements in general, you
+must also do error checking for 'break' and 'continue' outside of a loop.
+
+Invalid input code such as the following should result in a compile-time compiler error.
+```
+func main() {
+    int i;
+    i = 0;
+    break;  # Error. Used 'break' outside of a loop.
+    while i < 10 {
+        print(i);
+        i = i + 1;
+    }
+}
+```
+
 
