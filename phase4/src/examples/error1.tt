@@ -1,0 +1,9 @@
+func main() {
+    int i;
+    i = 0;
+    break;  # Error. Used 'break' outside of a loop.
+    while i < 10 {
+        print(i);
+        i = i + 1;
+    }
+}

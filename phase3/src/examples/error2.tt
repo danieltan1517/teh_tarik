@@ -1,0 +1,4 @@
+# error: main function has not been defined.
+func notmain() {
+
+}

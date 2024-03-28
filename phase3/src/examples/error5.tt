@@ -1,0 +1,5 @@
+func main() {
+  # Type mismatch. 'number' is not an array.
+  int number;
+  number[0] = 100;
+}

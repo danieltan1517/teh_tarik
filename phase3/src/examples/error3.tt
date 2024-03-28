@@ -1,0 +1,8 @@
+func add(int a, int b) {
+  return a + b;
+}
+
+func main() {
+  int a;
+  a = error(1);
+}
