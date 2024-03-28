@@ -100,6 +100,20 @@ Err(e) => {
 
 ### Interpreter
 
+Copy the `compiler.rs` file and paste it into your project. In your main file `main.rs`, do the following:
+```
+mod compiler;
+
+fn main() {
+
+  // ....rest of the compiler
+
+  let generated_code: String = parse(tokens);
+  compiler::compile_and_run(&generated_code);
+}
+
+```
+
 You can include the interpreter found in `compiler.rs` as part of your project. You do **not** need to make
 any modifications to the interpreter. You can make any change you want to the existing interpreter code.
 The interpreter code as found in `compiler.rs` should be sufficient enough to complete Phase 3 and 4.
