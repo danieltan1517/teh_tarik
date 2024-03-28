@@ -446,4 +446,19 @@ The output of the program should be:
 144
 ```
 
+### Semantic Error Check
+
+In addition to IR code generation, you must also catch semantic errors. The semantic errors you are assigned to catch are:
+
+* Using a variable without having declared it
+* Calling a function which has not been defined
+* Not defining a main function
+* Defining a variable more than once
+* Type mismatch: using a scalar integer variable as an array of integers
+* Type mismatch: using an array of integers as a scalar integer
+* Creating an array of size <= 0.
+
+You may optionally catch other possible semantic errors in addition to the ones list here (e.g. calling a function with the
+wrong number of parameters), but **that is optional** and not required.
+
 
