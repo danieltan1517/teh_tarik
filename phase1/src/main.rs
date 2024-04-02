@@ -198,6 +198,7 @@ fn lex_number(code: &str) -> (bool, Token, &str) {
     StateMachine::Start => {
       if letter >= '0' && letter <= '9' {
         state = StateMachine::Number;
+        success = true;
         index += 1;
       } else {
         return (false, Token::NotToken, "");
@@ -241,6 +242,7 @@ fn lex_identifier(code: &str) -> (bool, Token, &str) {
     StateMachine::Start => {
       if (letter >= 'a' && letter <= 'z') || (letter >= 'A' && letter <= 'Z'){
         state = StateMachine::Ident;
+        success = true;
         index += 1;
       } else {
         return (false, Token::NotToken, "");
@@ -333,6 +335,14 @@ mod tests {
         assert!(matches!(toks[2], Token::Num(2)));
         assert!(matches!(toks[3], Token::Plus));
         assert!(matches!(toks[4], Token::Num(3)));
+
+        let toks = lex("3 + 215 +-").unwrap();
+        assert!(toks.len() == 5);
+        assert!(matches!(toks[0], Token::Num(3)));
+        assert!(matches!(toks[1], Token::Plus));
+        assert!(matches!(toks[2], Token::Num(215)));
+        assert!(matches!(toks[3], Token::Plus));
+        assert!(matches!(toks[4], Token::Subtract));
 
         // test that the lexer catches invalid tokens
         assert!(matches!(lex("^^^"), Err(_)));
