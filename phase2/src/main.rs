@@ -28,7 +28,7 @@ fn main() {
 
     };
 
-    let (tokens, locations) = match lex(&code) {
+    let tokens = match lex(&code) {
     Err(error_message) => {
         println!("**Error**");
         println!("----------------------");
@@ -37,31 +37,22 @@ fn main() {
         return;
     }
 
-    Ok(data) => data,
+    Ok(tokens) => tokens,
     
     };
 
     let mut index: usize = 0;
-    match parse_expression(&tokens, &mut index) {
+    match parse_math(&tokens, &mut index) {
     Ok(num) => {
         println!("Expression = {code}");
         println!("Answer = {num}");
     }
 
     Err(e) => {
-
         if tokens.len() == 0 {
             println!("No code has been provided.");
-        } else if index >= tokens.len() {
-            index = tokens.len() - 1;
-            let loc = &locations[index];
-            println!("Error at line {}:{}.", loc.line_num, loc.col_num);
-            println!("{e}");
         } else {
-            index -= 1;
-            let loc = &locations[index];
-            println!("Error at line {}:{}.", loc.line_num, loc.col_num);
-            println!("{e}");
+            println!("Error {e}");
         }
     }
 
@@ -72,6 +63,7 @@ fn main() {
 
 #[derive(Debug, Clone)]
 enum Token {
+  NotToken,
   Plus,
   Subtract,
   Multiply,
@@ -80,130 +72,241 @@ enum Token {
   LeftParen,
   RightParen,
   Num(i32),
-  EndOfFile,
+  Ident(String),
+  If,
+  While,
+  Read,
+  Write,
+  Return,
+  Func,
+  Assign,
+  Int,
+  Semicolon,
 }
 
-// line of code
-struct Loc {
-    line_num: i32,
-    col_num: i32,
+// This is a lexer that parses numbers/identifiers and math operations
+fn lex(mut code: &str) -> Result<Vec<Token>, String> {
+  let mut tokens: Vec<Token> = vec![];
+  while code.len() > 0 {
+    let (success, token, rest) = lex_number(code);
+    if success {
+      code = rest; 
+      tokens.push(token);
+      continue;
+    } 
+ 
+    let (success, rest) = lex_space(code);
+    if success {
+      code = rest;
+      continue;
+    }
+
+    if code.starts_with("+") {
+      code = &code[1..];
+      tokens.push(Token::Plus);
+      continue;
+    }
+
+    if code.starts_with("-") {
+      code = &code[1..];
+      tokens.push(Token::Subtract);
+      continue;
+    }
+
+    if code.starts_with(";") {
+      code = &code[1..];
+      tokens.push(Token::Semicolon);
+      continue;
+    }
+
+    if code.starts_with("*") {
+      code = &code[1..];
+      tokens.push(Token::Multiply);
+      continue;
+    }
+
+    if code.starts_with("/") {
+      code = &code[1..];
+      tokens.push(Token::Divide);
+      continue;
+    }
+
+    if code.starts_with("(") {
+      code = &code[1..];
+      tokens.push(Token::LeftParen);
+      continue;
+    }
+   
+    if code.starts_with(")") {
+      code = &code[1..];
+      tokens.push(Token::RightParen);
+      continue;
+    }
+
+    if code.starts_with("%") {
+      code = &code[1..];
+      tokens.push(Token::Modulus);
+      continue;
+    }
+
+    if code.starts_with("=") {
+      code = &code[1..];
+      tokens.push(Token::Assign);
+      continue;
+    }
+
+    let (success, token, rest) = lex_identifier(code);
+    if success {
+      code = rest;
+      tokens.push(token);
+      continue;
+    }
+
+    let symbol = unrecognized_symbol(code);
+    return Err(format!("Unidentified symbol {symbol}"));
+
+  }
+
+  return Ok(tokens);
 }
 
-fn lex(code: &str) -> Result<(Vec<Token>, Vec<Loc>), String> {
-    let mut tokens: Vec<Token> = vec![];
-    let mut loc = vec![];
-    let mut token_start: usize = 0;
-    let mut token_end:   usize = 0;
-    let mut line_num:    i32   = 1;
-    let mut col_num:     i32   = 1;
-    let mut state_machine = StateMachine::Init;
+fn lex_space(code: &str) -> (bool, &str) {
+  for letter in code.chars() {
+    if letter.is_whitespace() {
+      return (true, &code[1..]);
+    } else {
+      return (false, code);
+    }
+  }
+  return (false, code);
+}
 
-    for character in code.chars() {
+// lex numbers.
+fn lex_number(code: &str) -> (bool, Token, &str) {
+  enum StateMachine {
+    Start,
+    Number,
+  }
 
-        // state machine transitions.
-        state_machine = match state_machine {
-
-        StateMachine::Init => {
-            token_start = token_end;
-            if character >= '0' && character <= '9' {
-                StateMachine::Number
-            } else {
-                StateMachine::Init
-            }
-        }
-
-        StateMachine::Number => {
-            if character >= '0' && character <= '9' {
-                StateMachine::Number
-            } else {
-                let number = create_number(token_start, token_end, code);
-                tokens.push(Token::Num(number));
-                loc.push(Loc{line_num:line_num, col_num:col_num});
-                StateMachine::Init
-            }
-        }
-
-        };
-
-        token_end += 1;
-
-        // actions of state machine.
-        match state_machine {
-
-        StateMachine::Init => {
-             match character {
-             '+' => {
-                 tokens.push(Token::Plus);
-                 loc.push(Loc{line_num:line_num, col_num:col_num});
-             }
-             '-' => {
-                 tokens.push(Token::Subtract);
-                 loc.push(Loc{line_num:line_num, col_num:col_num});
-             }
-             '*' => {
-                 tokens.push(Token::Multiply);
-                 loc.push(Loc{line_num:line_num, col_num:col_num});
-             }
-             '/' => {
-                 tokens.push(Token::Divide);
-                 loc.push(Loc{line_num:line_num, col_num:col_num});
-             }
-             '%' => {
-                 tokens.push(Token::Modulus);
-                 loc.push(Loc{line_num:line_num, col_num:col_num});
-             }
-             '(' => {
-                 tokens.push(Token::LeftParen);
-                 loc.push(Loc{line_num:line_num, col_num:col_num});
-             }
-             ')' => {
-                 tokens.push(Token::RightParen);
-                 loc.push(Loc{line_num:line_num, col_num:col_num});
-             }
-              _  => {
-                 if !character.is_whitespace() {
-                     let ident = &code[token_start..token_end];
-                     let message = format!("Error at line {}:{}. Unidentified symbol '{}'", line_num, col_num, ident);
-                     return Err(message);
-                 }
-             }
-
-             }
-        }
-
-        StateMachine::Number => {}
-
-        };
-
-        if character == '\n' {
-            col_num = 1;
-            line_num += 1;
-        } else {
-            col_num += 1;
-        }
+  let mut success = false;
+  let mut state = StateMachine::Start;
+  let mut index = 0;
+  for letter in code.chars() {
+    match state {
+    StateMachine::Start => {
+      if letter >= '0' && letter <= '9' {
+        state = StateMachine::Number;
+        success = true;
+        index += 1;
+      } else {
+        return (false, Token::NotToken, "");
+      }
     }
 
-    if matches!(state_machine, StateMachine::Number) {
-        let number = create_number(token_start, token_end, code);
-        tokens.push(Token::Num(number));
-        loc.push(Loc{line_num:line_num, col_num:col_num});
+    StateMachine::Number => {
+      if letter >= '0' && letter <= '9' {
+        state = StateMachine::Number;
+        success = true;
+        index += 1;
+      } else {
+        let num = code[..index].parse::<i32>().unwrap();
+        return (true, Token::Num(num), &code[index..]);
+      }
     }
 
-    tokens.push(Token::EndOfFile);
-    loc.push(Loc{line_num:line_num, col_num:col_num});
-    return Ok((tokens, loc));
+    }
+  }
 
-    fn create_number(start: usize, end: usize, code: &str) -> i32 {
-        // this code should correctly parse because the lexer verified that this is correct.
-        let token = &code[start..end];
-        token.parse::<i32>().unwrap()
+  if success == true {
+    let num: i32 = code.parse::<i32>().unwrap();
+    return (true, Token::Num(num), "");
+  } else {
+    return (false, Token::NotToken, "");
+  }
+}
+
+// lex identifiers.
+fn lex_identifier(code: &str) -> (bool, Token, &str) {
+  enum StateMachine {
+    Start,
+    Ident,
+  }
+
+  let mut success = false;
+  let mut state = StateMachine::Start;
+  let mut index = 0;
+  for letter in code.chars() {
+    match state {
+    StateMachine::Start => {
+      if (letter >= 'a' && letter <= 'z') || (letter >= 'A' && letter <= 'Z'){
+        state = StateMachine::Ident;
+        success = true;
+        index += 1;
+      } else {
+        return (false, Token::NotToken, "");
+      }
     }
 
-    enum StateMachine {
-        Init,
-        Number,
+    StateMachine::Ident => {
+      if (letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z') || (letter >= '0' && letter <= '9') || letter == '_' {
+        state = StateMachine::Ident;
+        success = true;
+        index += 1;
+      } else {
+        let token = &code[..index];
+        return (true, create_identifier(token), &code[index..]);
+      }
     }
 
+    }
+  }
+
+  if success == true {
+    return (true, create_identifier(code), "");
+  } else {
+    return (false, Token::NotToken, "");
+  }
+}
+
+fn unrecognized_symbol(code: &str) -> &str {
+  enum StateMachine {
+    Start,
+    Symbol,
+  }
+
+  let mut state_machine = StateMachine::Start;
+  let mut index = 0;
+  for letter in code.chars() {
+    match state_machine {
+    StateMachine::Start => {
+      state_machine = StateMachine::Symbol;
+      index += 1;
+    } 
+    
+    StateMachine::Symbol => {
+      if letter.is_whitespace() {
+        return &code[..index];
+      } else {
+        index += 1;
+      }
+    }
+
+    }
+  }
+  return &code[..index];
+} 
+
+fn create_identifier(code: &str) -> Token {
+  match code {
+  "func" => Token::Func,
+  "return" => Token::Return,
+  "int" => Token::Int,
+  "print" => Token::Write,
+  "read" => Token::Read,
+  "while" => Token::While,
+  "if" => Token::If,
+  _ => Token::Ident(String::from(code)),
+  }
 }
 
 // the <'a> is the "lifetimes" type annotations in Rust.
@@ -248,58 +351,59 @@ fn next_result<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Toke
     }
 }
 
+fn parse_math(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, String> {
+  let answer = parse_expression(tokens, index)?;
+  if matches!(next_result(tokens, index)?, Token::Semicolon) {
+    return Ok(answer);
+  } else {
+    return Err(String::from("missing semicolon ';'"));
+  }
+}
+
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, String> {
-    let mut _ans = parse_multiply_expression(tokens, index)?;
+    let mut answer = parse_multiply_expression(tokens, index)?;
     loop {
        match peek_result(tokens, *index)? {
 
        Token::Plus => {
            *index += 1;
-           let _answer = parse_multiply_expression(tokens, index)?;
+           answer += parse_multiply_expression(tokens, index)?;
        }
 
        Token::Subtract => {
            *index += 1;
-           let _answer = parse_multiply_expression(tokens, index)?;
-       }
-
-       Token::RightParen | Token::EndOfFile => {
-           break;
+           answer -= parse_multiply_expression(tokens, index)?;
        }
 
        _ => { 
-           return Err(String::from("invalid expression."));
+           break;
        }
 
        };
     }
 
-    return Ok(_ans);
+    return Ok(answer);
 }
 
 fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, String> {
-    let mut _ans = parse_term(tokens, index)?;
+    let mut answer = parse_term(tokens, index)?;
     loop {
        match peek_result(tokens, *index)? {
        Token::Multiply => {
           *index += 1;
-          let _answer = parse_term(tokens, index)?;
+          answer *= parse_term(tokens, index)?;
        }
 
        Token::Divide => {
           *index += 1;
-          let _answer = parse_term(tokens, index)?;
+          answer /= parse_term(tokens, index)?;
        }
 
        Token::Modulus => {
           *index += 1;
-          let _answer = parse_term(tokens, index)?;
+          answer %= parse_term(tokens, index)?;
        }
   
-       Token::EndOfFile => {
-           break;
-       }
-
        _ => {
            break;
        }
@@ -308,7 +412,7 @@ fn parse_multiply_expression(tokens: &Vec<Token>, index: &mut usize) -> Result<i
 
     }
 
-    return Ok(0);
+    return Ok(answer);
 }
 
 fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, String> {
@@ -319,6 +423,7 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, String> {
     }
 
     Token::LeftParen => {
+        println!("Expression term\n");
         let answer = parse_expression(tokens, index)?;
         if !matches!(next_result(tokens, index)?, Token::RightParen) {
             return Err(String::from("expected ')' parenthesis"));
@@ -326,11 +431,8 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, String> {
         return Ok(answer);
     }
 
-    Token::EndOfFile => {
-        return Ok(0);
-    }
-
     _ => {
+        println!("{:?}", tokens[*index]);
         return Err(String::from("invalid expression"));
     }
 
@@ -341,21 +443,38 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Result<i32, String> {
 #[cfg(test)]
 mod tests {
     use crate::lex;
-    use crate::parse_expression;
+    use crate::parse_math;
 
     #[test]
     fn parser_test() {
         // test that parser works on correct cases
-        assert!(parse_expression_string("1") == 1);
-        assert!(parse_expression_string("1 + 2") == 3);
-        assert!(parse_expression_string("(7 * 6)") == 42);
-        assert!(parse_expression_string("(7 * 6) + 42") == 84);
-        assert!(parse_expression_string("42 + (7 * 3) * 2") == 84);
+        assert!(parse_math_string("1;") == 1);
+        assert!(parse_math_string("1 + 2;") == 3);
+        assert!(parse_math_string("(7 * 6);") == 42);
+        assert!(parse_math_string("(7 * 6) + 42;") == 84);
+        assert!(parse_math_string("42 + (7 * 3) * 2;") == 84);
+        assert!(parse_math_string("2 + (7 * 3) + 2;") == 25);
+        assert!(parse_math_string("2 + (7 * 3) + 2;") == 25);
+        assert!(parse_math_string("2 + (7 * (3 + 1)) + 2;") == 32);
+        assert!(parse_math_string("(2);") == 2);
+
+        // test parser errors
+        assert!(matches!(parse_error("(2;"), Err(_)));
+        assert!(matches!(parse_error("(2"), Err(_)));
+        assert!(matches!(parse_error("2);"), Err(_)));
+        assert!(matches!(parse_error("2))"), Err(_)));
+        assert!(matches!(parse_error("2 2;"), Err(_)));
+        assert!(matches!(parse_error("5 200;"), Err(_)));
     }
 
-    fn parse_expression_string(expression: &str) -> i32 {
-        let (toks, _) = lex(expression).unwrap();
-        parse_expression(&toks, &mut 0).unwrap()
+    fn parse_error(expression: &str) -> Result<i32, String> {
+        let toks = lex(expression).unwrap();
+        parse_math(&toks, &mut 0)
+    }
+
+    fn parse_math_string(expression: &str) -> i32 {
+        let toks = lex(expression).unwrap();
+        parse_math(&toks, &mut 0).unwrap()
     }
 }
 

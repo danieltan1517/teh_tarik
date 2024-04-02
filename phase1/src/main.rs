@@ -314,8 +314,6 @@ fn create_identifier(code: &str) -> Token {
   }
 }
 
-
-
 // writing tests!
 // testing shows robustness in software, and is good for spotting regressions
 // to run a test, type "cargo test" in the terminal.
