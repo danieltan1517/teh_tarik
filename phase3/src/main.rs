@@ -47,6 +47,10 @@ fn main() {
     match parse_program(&tokens, &mut index) {
 
     Ok(generated_code) => {
+        println!("Generated Code:");
+        println!("-------------------------------");
+        println!("{generated_code}");
+        println!("-------------------------------");
         compiler::compile_and_run(&generated_code);
     }
 
