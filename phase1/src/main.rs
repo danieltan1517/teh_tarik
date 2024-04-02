@@ -248,7 +248,7 @@ fn lex_identifier(code: &str) -> (bool, Token, &str) {
     }
 
     StateMachine::Ident => {
-      if (letter >= 'a' && letter <= 'z') || (letter >= '0' && letter <= '9') || letter == '_' {
+      if (letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z') || (letter >= '0' && letter <= '9') || letter == '_' {
         state = StateMachine::Ident;
         success = true;
         index += 1;

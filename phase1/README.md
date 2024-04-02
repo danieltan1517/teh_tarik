@@ -31,116 +31,173 @@ fn main() {
 
 Let's build a simple lexer that identifies numbers with multiple digits, as well
 as basic math operations such as `+`, `-`, `*`, `/`. A lexer can be represented as
-a finite automata using a `StateMachine` enum to represent the different states.
+multiple finite state machines using a `StateMachine` enum to represent the different states.
+We will use if statements to execute different finite state machines.
 
 ```
-fn lex(code: &str) -> Result<Vec<Token>, String> {
-    let mut tokens: Vec<Token> = vec![];
-    let mut token_start: usize = 0;
-    let mut token_end:   usize = 0;
-    let mut line_num:    i32   = 1;
-    let mut col_num:     i32   = 1;
-    let mut state_machine = StateMachine::Init;
-
-    for character in code.chars() {
-
-        // state machine transitions.
-        state_machine = match state_machine {
-
-        StateMachine::Init => {
-            token_start = token_end;
-            if character >= '0' && character <= '9' {
-                StateMachine::Number
-            } else {
-                StateMachine::Init
-            }
-        }
-
-        StateMachine::Number => {
-            if character >= '0' && character <= '9' {
-                StateMachine::Number
-            } else {
-                let number = create_number(token_start, token_end, code);
-                tokens.push(Token::Num(number));
-                StateMachine::Init
-            }
-        }
-
-        };
-
-        token_end += 1;
-
-        // actions of state machine.
-        match state_machine {
-
-        StateMachine::Init => {
-             match character {
-             '+' => tokens.push(Token::Plus),
-             '-' => tokens.push(Token::Subtract),
-             '*' => tokens.push(Token::Multiply),
-             '/' => tokens.push(Token::Divide),
-             '%' => tokens.push(Token::Modulus),
-             '=' => tokens.push(Token::Assign),
-              _  => {
-                 if !character.is_whitespace() {
-                     let ident = &code[token_start..token_end];
-                     let message = format!("Error at line {}:{}. Unidentified symbol '{}'", line_num, col_num, ident);
-                     return Err(String::from(message));
-                 }
-             }
-
-             }
-        }
-
-        StateMachine::Number => {}
-
-        };
-
-        if character == '\n' {
-            col_num = 1;
-            line_num += 1;
-        } else {
-            col_num += 1;
-        }
+fn lex(mut code: &str) -> Result<Vec<Token>, String> {
+  let mut tokens: Vec<Token> = vec![];
+  while code.len() > 0 {
+    let (success, token, rest) = lex_number(code);
+    if success {
+      code = rest; 
+      tokens.push(token);
+      continue;
+    } 
+ 
+    let (success, rest) = lex_space(code);
+    if success {
+      code = rest;
+      continue;
     }
 
-    if matches!(state_machine, StateMachine::Number) {
-        let number = create_number(token_start, token_end, code);
-        tokens.push(Token::Num(number));
+    if code.starts_with("+") {
+      code = &code[1..];
+      tokens.push(Token::Plus);
+      continue;
     }
 
-    return Ok(tokens);
-
-    fn create_number(start: usize, end: usize, code: &str) -> i32 {
-        // this code should correctly parse because the lexer verified that this is correct.
-        // quit.
-        let token = &code[start..end];
-        match token.parse::<i32>() {
-        Err(_) => panic!("Error. Logic Error: Lexer failed to lex number \"{token}\" correctly"),
-        Ok(num) => num,
-        }
+    if code.starts_with("-") {
+      code = &code[1..];
+      tokens.push(Token::Subtract);
+      continue;
     }
 
-    enum StateMachine {
-        Init,
-        Number,
+    if code.starts_with("*") {
+      code = &code[1..];
+      tokens.push(Token::Multiply);
+      continue;
     }
+
+    if code.starts_with("/") {
+      code = &code[1..];
+      tokens.push(Token::Divide);
+      continue;
+    }
+
+    if code.starts_with("%") {
+      code = &code[1..];
+      tokens.push(Token::Modulus);
+      continue;
+    }
+
+    if code.starts_with("=") {
+      code = &code[1..];
+      tokens.push(Token::Assign);
+      continue;
+    }
+
+    let (success, token, rest) = lex_identifier(code);
+    if success {
+      code = rest;
+      tokens.push(token);
+      continue;
+    }
+
+    let symbol = unrecognized_symbol(code);
+    return Err(format!("Unidentified symbol {symbol}"));
+
+  }
+
+  return Ok(tokens);
 }
 ```
 
-These following lines are used to determine and location number of the tokens for the purposes of error
-handling. These are important for telling users about the location of the error in the case of badly formed input.
+Create a "lex_numbers" state machine to recognize number such as 0, 12345, and 313. We
+detect that at least the first letter in the string is an ASCII value '0' to '9', and make sure that
+all letters after the first digit are also '0' to '9'.
 
 ```
-if character == '\n' {
-    col_num = 1;
-    line_num += 1;
-} else {
-    col_num += 1;
+// lex numbers.
+fn lex_number(code: &str) -> (bool, Token, &str) {
+  enum StateMachine {
+    Start,
+    Number,
+  }
+
+  let mut success = false;
+  let mut state = StateMachine::Start;
+  let mut index = 0;
+  for letter in code.chars() {
+    match state {
+    StateMachine::Start => {
+      if letter >= '0' && letter <= '9' {
+        state = StateMachine::Number;
+        index += 1;
+      } else {
+        return (false, Token::NotToken, "");
+      }
+    }
+
+    StateMachine::Number => {
+      if letter >= '0' && letter <= '9' {
+        state = StateMachine::Number;
+        success = true;
+        index += 1;
+      } else {
+        let num = code[..index].parse::<i32>().unwrap();
+        return (true, Token::Num(num), &code[index..]);
+      }
+    }
+
+    }
+  }
+
+  if success == true {
+    let num: i32 = code.parse::<i32>().unwrap();
+    return (true, Token::Num(num), "");
+  } else {
+    return (false, Token::NotToken, "");
+  }
 }
 ```
 
-### Hints on Identifiers
+Create a "lex_identifier" state machine to recognize identifiers such as 'airplace', 'bay234', and 'variable3'. We
+detect that at least the first letter in the string is an ASCII value 'a' to 'z' upper or lower case, 
+and that the letters and digits following are also part of the identifier.
+```
+// lex identifiers.
+fn lex_identifier(code: &str) -> (bool, Token, &str) {
+  enum StateMachine {
+    Start,
+    Ident,
+  }
+
+  let mut success = false;
+  let mut state = StateMachine::Start;
+  let mut index = 0;
+  for letter in code.chars() {
+    match state {
+    StateMachine::Start => {
+      if (letter >= 'a' && letter <= 'z') || (letter >= 'A' && letter <= 'Z'){
+        state = StateMachine::Ident;
+        index += 1;
+      } else {
+        return (false, Token::NotToken, "");
+      }
+    }
+
+    StateMachine::Ident => {
+      if (letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z') || (letter >= '0' && letter <= '9') || letter == '_' {
+        state = StateMachine::Ident;
+        success = true;
+        index += 1;
+      } else {
+        let token = &code[..index];
+        return (true, create_identifier(token), &code[index..]);
+      }
+    }
+
+    }
+  }
+
+  if success == true {
+    return (true, create_identifier(code), "");
+  } else {
+    return (false, Token::NotToken, "");
+  }
+}
+```
 
 An identifier could be identified in a way similar to how numbers are identified, just add a state to the state machine
 for identifiers. `if`, `while`, `read` keywords conflicts with identifiers. When creating a identifier, check to see that
