@@ -221,12 +221,3 @@ fn create_identifier(token_start: usize, token_end: usize, code: &str) -> Token 
     }
 }
 ```
-
-Just like the way number tokens are handled, you can handle identifiers in the same exact way.
-
-```
-let ident_token = create_identifier(start, end, code);
-tokens.push(ident_token);
-```
-
-Note that there are multiple ways to do this, and this is not the only way to cleanly implement this.
