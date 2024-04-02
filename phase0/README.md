@@ -159,6 +159,17 @@ println!("{first_name}");
 println!("{last_name}");
 ```
 
+You can use the `starts_with` String member function to determine if a String starts with a certain prefix.
+
+```
+let name = "Ada Lovelace";
+if name.starts_with("Ada") {
+    println!("Your name starts with Ada");
+} else {
+    println!("Your name starts with something else");
+}
+```
+
 ### References
 
 Similar to C++, Rust has a reference type. References can be used to pass data read-only. A `&mut ` will
