@@ -205,19 +205,19 @@ the string is not a keyword. If it is in the list of keywords, return the approp
 using `String::from(token)` and create an identifier token.
 
 ```
-fn create_identifier(token_start: usize, token_end: usize, code: &str) -> Token {
-    let token = &code[token_start..token_end];
-    match token {
-    "func" => Token::Func,
-    "return" => Token::Return,
-    "int" => Token::Int,
+fn create_identifier(code: &str) -> Token {
+  match code {
+  "func" => Token::Func,
+  "return" => Token::Return,
+  "int" => Token::Int,
 
-    // ... all keywords...
+  // todo: implement all keywords...
+  // ... all keywords...
 
-    "read" => Token::Read,
-    "while" => Token::While,
-    "if" => Token::If,
-    _ => Token::Ident(String::from(token)),
-    }
+  "read" => Token::Read,
+  "while" => Token::While,
+  "if" => Token::If,
+  _ => Token::Ident(String::from(code)),
+  }
 }
 ```
