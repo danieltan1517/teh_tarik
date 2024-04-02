@@ -1,0 +1,11 @@
+func add(int a, int b) {
+  return a + b;
+}
+
+func mult(int a, int b) {
+  return a * b;
+}
+
+func main() {
+  int c;
+}
