@@ -230,23 +230,3 @@ tokens.push(ident_token);
 ```
 
 Note that there are multiple ways to do this, and this is not the only way to cleanly implement this.
-
-### Hints on Sign
-
-Signs can be handled in a similar way to identifiers. Just add a state to the state machine for sign tokens.
-
-```
-fn create_sign(start: usize, end: usize, code: &str) -> Result<Token, String> {
-    let token = &code[start..end];
-    match token {
-    "<" => Ok(Token::Less),
-    "<=" => Ok(Token::LessEqual),
-    ">" => Ok(Token::Greater),
-    ">=" => Ok(Token::GreaterEqual),
-    "==" => Ok(Token::Equality),
-    "=" => Ok(Token::Assign),
-    "!=" => Ok(Token::NotEqual),
-    _ => return Err(String::from(format!("invalid symbol {}", token))),
-}
-}
-```
