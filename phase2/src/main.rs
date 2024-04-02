@@ -465,6 +465,7 @@ mod tests {
         assert!(matches!(parse_error("2))"), Err(_)));
         assert!(matches!(parse_error("2 2;"), Err(_)));
         assert!(matches!(parse_error("5 200;"), Err(_)));
+        assert!(matches!(parse_error("5 +- 200;"), Err(_)));
     }
 
     fn parse_error(expression: &str) -> Result<i32, String> {
