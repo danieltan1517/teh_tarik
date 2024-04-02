@@ -7,5 +7,5 @@ func mult(int a, int b) {
 }
 
 func main() {
-  int c;
+
 }
