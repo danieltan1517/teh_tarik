@@ -655,13 +655,13 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
         let num = match next_result(*serialized_line, tokens, idx)? {
         IRTok::Num(num) => *num,
         IRTok::Var(ident) => {
-          return error(*serialized_line, String::from("array cannot be a variable '{ident}' length. must be a number.")),
+          return error(*serialized_line, String::from("array cannot be a variable '{ident}' length. must be a number."));
         }
-        _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%int[] array, 10'")),
+        _ => {return error(*serialized_line, String::from("invalid instruction. expected format like '%int[] array, 10'"));}
         };
 
         if num <= 0 {
-          return error(*serialized_line, String::from("array size cannot be less than or equal to zero.")),
+          return error(*serialized_line, String::from("array size cannot be less than or equal to zero."));
         }
 
         if let Some(_) = function.variables.get(ident) {
