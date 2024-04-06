@@ -536,13 +536,6 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<Option<Strin
         return Err(String::from("expected '{'"));
     }
 
-    for (index, param) in params.iter().enumerate() {
-        let decl = format!(". {}\n", param);
-        let assign = format!("= {}, ${}\n", param, index);
-        code += &decl;
-        code += &assign;
-    }
-
     loop {
         match parse_statement(tokens, index)? {
         None => {
