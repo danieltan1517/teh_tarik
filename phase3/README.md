@@ -53,23 +53,23 @@ it will generate a string `_temp1`, and so on. `VAR_NUM` is a global variable.
 
 ### Include Files
 
-You can include other files, such as `compiler.rs` using:
+You can include other files, such as `interpeter.rs` using:
 
 ```
-mod compiler;
+mod interpreter;
 ```
 
-This will include the `compiler.rs` file into `main.rs` for use. This is similar to `#include`
+This will include the `interpreter.rs` file into `main.rs` for use. This is similar to `#include`
 in C.
 
 
 ### Running the Example
 
-Just like Phase 1 and Phase 2, you can hit `cargo run` to run the compiler. To run the compiler
-on the examples, type `cargo run examples/add.tt` to run the compiler on `examples/add.tt`. Observe
+Just like Phase 1 and Phase 2, you can hit `cargo run` to run the interpreter. To run the interpreter
+on the examples, type `cargo run examples/add.tt` to run the interpreter on `examples/add.tt`. Observe
 the control flow of the program and take note of how the intermediate representation is generated.
 
-Output the intermediate represention as a `String`. Afterwards, call `compile_and_run` to compile and
+Output the intermediate represention as a `String`. Afterward, call `execute_ir` to interpret and
 run the generated IR.
 
 The following pseudocode describes the structure of the program, where `lex` is the lexing code from
@@ -78,17 +78,17 @@ Phase 1, and `parse` is from Phase 2.
 ```
 let tokens = lex(code)?; 
 let generated_code: String = parse(tokens)?;
-compiler::compile_and_run(&generated_code);
+interpreter::execute_ir(&generated_code);
 ```
 
 Generate code as a `String` in the function `parse_program`. If `parse_program` is successful, 
-call `compile_and_run` to compile and run the code. If `parse_program` fails, return an error.
+call `execute_ir` to interpret and run the ir code. If `parse_program` fails, return an error.
 
 ```
 match parse_program(&tokens, &mut index) {
 
 Ok(generated_code) => {
-    compiler::compile_and_run(&generated_code);
+    interpreter::execute_ir(&generated_code);
 }
 
 Err(e) => {
@@ -100,7 +100,7 @@ Err(e) => {
 
 ### Interpreter
 
-Copy the `compiler.rs` file and paste it into your project. In your main file `main.rs`, do the following:
+Copy the `interpreter.rs` file and paste it into your project. In your main file `main.rs`, do the following:
 ```
 mod compiler;
 
@@ -114,24 +114,24 @@ fn main() {
 
 ```
 
-You can include the interpreter found in `compiler.rs` as part of your project. You do **not** need to make
+You can include the interpreter found in `interpreter.rs` as part of your project. You do **not** need to make
 any modifications to the interpreter. You can make any change you want to the existing interpreter code.
-The interpreter code as found in `compiler.rs` should be sufficient enough to complete Phase 3 and 4.
+The interpreter code as found in `interpreter.rs` should be sufficient to complete Phase 3 and 4.
 
 ### IR Syntax and Semantics
 
-An intermediate representation is the data structure or code used internally by a compiler to
-represent pseudo-assembly. The compiler takes the IR, performs compiler optimizations on the IR,
-and translates that IR into assembly language. The IR is a way to allow a compiler to target multiple
-computer architectures, multiple CPUs, or multiple operating systems. The IR is a portable pseudo-
-assembly language representation that is eventually compiled down into real assembly.
+An intermediate representation (IR) is the data structure or code used internally by an interpreter or compiler to
+represent pseudo-assembly. A (low-level/backend) compiler generally takes the IR, performs compiler optimizations 
+on the IR, and translates that IR into assembly language. The IR is a way to allow a compiler suite to target multiple
+computer architectures and operating systems. The IR is a portable pseudo-assembly 
+language representation that is further compiled into real assembly.
 
-The real IR of real compilers such as GCC or Clang can be incredibly difficult to program for, and
+The IR of real-world compilers such as GCC or Clang can be incredibly difficult to program for, and
 for this class, we will only be generating a simple IR built for teaching students compilers. We will
 be generating IR for a provided interpreter, and running that interpreter to run the generated IR. The
-interpreter is available in `compiler.rs`.
+interpreter is available in `interpreter.rs`.
 
-**Pass the IR to the function `compile_and_run` as a string, and the interpreter will run the code for you.**
+**Pass the IR to the function `execute_ir` as a string, and the interpreter will run the code for you.**
 
 Here is the entire instruction set IR for the interpreter you will be using to run the generated code:
 

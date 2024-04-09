@@ -1,6 +1,6 @@
 use std::env;
 use std::fs;
-mod compiler;
+mod interpreter;
 
 fn main() {
     // get commandline arguments.
@@ -47,7 +47,7 @@ fn main() {
     match parse_program(&tokens, &mut index) {
 
     Ok(generated_code) => {
-        compiler::compile_and_run(&generated_code);
+        interpreter::execute_ir(&generated_code);
     }
 
     Err(message) => {

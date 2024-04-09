@@ -1,6 +1,6 @@
 use std::env;
 use std::fs;
-mod compiler;
+mod interpreter;
 
 fn main() {
     // get commandline arguments.
@@ -51,7 +51,7 @@ fn main() {
         println!("-------------------------------");
         println!("{generated_code}");
         println!("-------------------------------");
-        compiler::compile_and_run(&generated_code);
+        interpreter::execute_ir(&generated_code);
     }
 
     Err(message) => {

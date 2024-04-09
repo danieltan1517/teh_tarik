@@ -1,10 +1,6 @@
-/target
-mil_run
 *.mil
-phase0/target
-phase1/target
-phase2/target
-phase2_example/target
-phase3/target
-phase4/target
-legacy/
+
+target/
+.idea/
+.vscode/
+.history/

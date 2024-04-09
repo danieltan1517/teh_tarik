@@ -1,4 +1,4 @@
-pub fn compile_and_run(code: &str) {
+pub fn execute_ir(code: &str) {
     let tokens = lex_ir(code);
     let bytecode = match parse_ir(&tokens, &mut 0) {
     Ok(bytecode) => {
@@ -1305,7 +1305,7 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
 
 #[cfg(test)]
 mod ir_tests {
-    use crate::compiler::*;
+    use crate::interpreter::*;
 
     #[test]
     fn ir_token() {
