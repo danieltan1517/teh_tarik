@@ -142,7 +142,7 @@ fn lex(mut code: &str) -> Result<Vec<Token>, String> {
     }
 
     if code.starts_with(">=") {
-      code = &code[1..];
+      code = &code[2..];
       tokens.push(Token::GreaterEqual);
       continue;
     }
