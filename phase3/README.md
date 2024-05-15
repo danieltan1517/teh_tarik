@@ -102,14 +102,14 @@ Err(e) => {
 
 Copy the `interpreter.rs` file and paste it into your project. In your main file `main.rs`, do the following:
 ```
-mod compiler;
+mod interpreter;
 
 fn main() {
 
   // ....rest of the compiler
 
   let generated_code: String = parse(tokens);
-  compiler::compile_and_run(&generated_code);
+  interpreter::execute_ir(&generated_code);
 }
 
 ```
