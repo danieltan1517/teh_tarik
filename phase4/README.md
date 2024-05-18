@@ -356,7 +356,7 @@ The IR code when executed should produce the following result:
 ```
 
 ---
-Given the following `primes.tt` program:
+Given the following `primes.tt` program (this is an extraneous test case that you do not need to handle):
 ```
 func main() {
 
