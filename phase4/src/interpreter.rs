@@ -516,7 +516,7 @@ fn run_bytecode(stdin: &io::Stdin, function: &FunctionBytecode, calls: &Vec<Func
             instr_pointer += 1;
         }
 
-        Bytecode::Label(_) => {
+        Bytecode::Label => {
             instr_pointer += 1;
         }
 
@@ -1000,7 +1000,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
         } else {
             return error(*serialized_line, format!("label {} already defined.", name));
         }
-        bytecode = Bytecode::Label(line);
+        bytecode = Bytecode::Label;
         if !matches!(peek_result(*serialized_line, tokens, *idx)?, IRTok::EndInstr) {
             return error(*serialized_line, format!("invalid opcode '{}'. labels can be declared using ':label'", name));
         }
@@ -1495,7 +1495,7 @@ enum Bytecode {
 
     // EndFunc
     End,
-    Label(usize),
+    Label,
 
     // declarations.
     Int(i32),
