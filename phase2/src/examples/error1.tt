@@ -1,0 +1,2 @@
+# Error. Missing the 'func' keyword.
+main() {

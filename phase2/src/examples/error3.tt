@@ -1,0 +1,9 @@
+# Error. Invalid Expression.
+func main() {
+
+  int a;
+  int b;
+  int c;
+  c = (1 + (2 - ;
+
+}

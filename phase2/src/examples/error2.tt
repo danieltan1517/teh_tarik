@@ -1,0 +1,4 @@
+# Error. Missing the left parenthesis '('
+func main ) {
+
+}
