@@ -5,42 +5,32 @@ func main() {
   int b;
   int c;
 
-  # This should output '150'
   a = 100;
   b = 50;
+
+  # This should output '150'
   c = a + b;
   print(c);
 
   # This should output '50'
-  a = 100;
-  b = 50;
   c = a - b;
   print(c);
 
   # This should output '5000'
-  a = 100;
-  b = 50;
   c = a * b;
   print(c);
 
   # This should output '2'
-  a = 100;
-  b = 50;
   c = a / b;
   print(c);
 
   # This should output '0'
-  a = 100;
-  b = 50;
   c = a % b;
   print(c);
 
-  # Todo: 'complex expression' is not handled by the parser example.
-  # I leave that as an exercise for students.
-  # Look at the 'Phase 2' folder for hints on how parse a complex expression.
   # Complex Expression. (4 + 2) * 7
-  # a = 4;
-  # b = 7;
-  # c = (a + 2) * b;
-  # print(c);
+  a = 4;
+  b = 7;
+  c = (a + 2) * b;
+  print(c);
 }

@@ -1,5 +1,0 @@
-func main() {
-  # forgot the semicolon
-  int a
-  int b;
-}
