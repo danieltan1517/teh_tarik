@@ -342,9 +342,12 @@ fn create_identifier(code: &str) -> Token {
 A correct and complete lexer should be able to lex all the example programs correctly, transforming 
 the string into a list of tokens. At the end of lexing, print out the tokens using a for loop. An 
 example of this can be found in “phase1/src/main.rs”.
-Rubric
+
+### Rubric
 Demo/Group Participation 10 points
-Proper Output for Example Test Cases 80 points (10 points each test case)
+
+Proper Output for Example Test Cases 80 points (10 points each test case):
+
 * add.tt
 * array.tt
 * break.tt
