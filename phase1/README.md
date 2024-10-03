@@ -34,6 +34,16 @@ Identifier("array")
 Semicolon
 ```
 
+For your lexer, your program should be written in the following way:
+```
+fn main() {
+
+   // 1) open and read text contents from a file 
+   // 2) lex the text contents of the file
+   // 3) print out the tokens that have been lexed
+}
+```
+
 ### Table of Tokens
 
 For your lexer, this is the complete list of tokens you need to identify for Phase 1.
