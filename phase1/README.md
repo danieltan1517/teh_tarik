@@ -1,4 +1,95 @@
-# Building A Lexer in Rust
+# Phase 1: Building A Lexer in Rust
+
+### Introduction
+
+A lexer converts text into meaningful tokens belonging to categories defined by a "lexer" program. In a programming language compiler, a lexer partitions text into tokens such as identifiers, operators, grouping symbols, and data types.
+
+For example, if we have a statement:
+```
+c = a + b;
+```
+
+The lexer should partition the statement into the following tokens:
+```
+Identifier("c")
+Assign
+Identifier("a")
+Plus
+Identifier("b")
+Semicolon
+```
+
+To do another example, if we have a statement:
+```
+int [8] array;
+```
+
+The lexer should partition the statement into the following tokens:
+```
+Int
+LeftBracket
+Number(8)
+RightBracket
+Identifier("array")
+Semicolon
+```
+
+### Table of Tokens
+
+For your lexer, this is the complete list of tokens you need to identify for Phase 1.
+
+|Symbol                | Token Name   |
+|----------------------|--------------|
+|func                  | Func         |
+|return                | Return       |
+|int                   | Int          |
+|print                 | Print        |
+|read                  | Read         |
+|while                 | While        |
+|if                    | If           |
+|else                  | Else         |
+|break                 | Break        |
+|continue              | Continue     |
+|(                     | LeftParen    |
+|)                     | RightParen   |
+|{                     | LeftCurly    |
+|}                     | RightCurly   |
+|[                     | LeftBracket  |
+|]                     | RightBracket |
+|,                     | Comma        |
+|;                     | Semicolon    |
+|+                     | Plus         |
+|-                     | Subtract     |
+|*                     | Multiply     |
+|/                     | Divide       |
+|%                     | Modulus      |
+|=                     | Assign       |
+|<                     | Less         |
+|<=                    | LessEqual    |
+|>                     | Greater      |
+|>=                    | GreaterEqual |
+|==                    | Equality     |
+|!=                    | NotEqual     |
+|variable_name         | Ident        |
+|10311517              | Num          |
+
+#### Variable Identifier Names
+
+Variables begin with an upper or lower case letters A-Z followed by a sequence of underscores or numbers. Examples include:
+```
+int variable_name;
+int var1;
+int october_31_1517;
+```
+
+#### Comments
+
+Comments can be single line comments starting with `#`. For example:
+
+```
+int x; #This is a variable declaration.
+```
+
 
 ### Opening and read the entire file
 
