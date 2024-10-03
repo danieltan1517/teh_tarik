@@ -344,7 +344,7 @@ the string into a list of tokens. At the end of lexing, print out the tokens usi
 example of this can be found in “phase1/src/main.rs”.
 Rubric
 Demo/Group Participation 10 points
-Proper Output for Test Cases 80 points (10 points each test case)
+Proper Output for Example Test Cases 80 points (10 points each test case)
 * add.tt
 * array.tt
 * break.tt
@@ -353,7 +353,9 @@ Proper Output for Test Cases 80 points (10 points each test case)
 * loop.tt
 * math.tt
 * nested_loop.tt
+  
 Proper Output for Lexical Errors 10 points
+
 All projects can be turned in up to 1 week late. Each day the project is late, 3% will be deducted per
 day for up to 21%. After a week, projects will not be accepted.
 
