@@ -44,6 +44,21 @@ fn main() {
 }
 ```
 
+The lexer takes as input a piece of code represented as a string, and outputs a list of tokens based on the input. If the lexer detects an invalid token, then the 
+lexer spits out an error, and the compiler should halt. If there is an error detected, the compiler should inform the user about what is wrong.
+
+The lexer must meet the following functionality:
+- The lexer should have correct rules for detecting valid/invalid identifiers based on the language 
+specification
+- The lexer should detect and remove comments properly (e.g. `#This is a comment` should parse as 
+one token and then removed from the list of tokens)
+- The lexer should detect and report proper error messages for invalid identifiers and unrecognized 
+symbols (e.g. invalid identifier tokens such as `2a` is an error)
+The lexer is allowed to halt at the first error.
+Please take note that a lexer does not need to check for errors such as misplaced semicolons, balanced parenthesis, or balanced curly brace. Handling those error cases is up to the parser in Phase 2.
+Comments should not be part of the output list of tokens.
+
+
 ### Table of Tokens
 
 For your lexer, this is the complete list of tokens you need to identify for Phase 1.
@@ -322,3 +337,23 @@ fn create_identifier(code: &str) -> Token {
   }
 }
 ```
+
+### Submission
+A correct and complete lexer should be able to lex all the example programs correctly, transforming 
+the string into a list of tokens. At the end of lexing, print out the tokens using a for loop. An 
+example of this can be found in “phase1/src/main.rs”.
+Rubric
+Demo/Group Participation 10 points
+Proper Output for Test Cases 80 points (10 points each test case)
+* add.tt
+* array.tt
+* break.tt
+* function.tt
+* if.tt
+* loop.tt
+* math.tt
+* nested_loop.tt
+Proper Output for Lexical Errors 10 points
+All projects can be turned in up to 1 week late. Each day the project is late, 3% will be deducted per
+day for up to 21%. After a week, projects will not be accepted.
+
