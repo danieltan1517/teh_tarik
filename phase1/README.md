@@ -338,6 +338,207 @@ fn create_identifier(code: &str) -> Token {
 }
 ```
 
+### Example Output
+
+#### add.tt
+
+Given the following `add.tt` program:
+```
+func main() {
+  int a;
+  int b;
+  int c;
+  a = 100;
+  b = 50;
+  c = a + b;
+  print(c);
+}
+```
+The following output is the correct output:
+```
+Func
+Ident("main")
+LeftParen
+RightParen
+LeftCurly
+Int
+Ident("a")
+Semicolon
+Int
+Ident("b")
+Semicolon
+Int
+Ident("c")
+Semicolon
+Ident("a")
+Assign
+Num(100)
+Semicolon
+Ident("b")
+Assign
+Num(50)
+Semicolon
+Ident("c")
+Assign
+Ident("a")
+Plus
+Ident("b")
+Semicolon
+Print
+LeftParen
+Ident("c")
+RightParen
+Semicolon
+RightCurly
+```
+
+#### math.tt
+
+Given the follow `math.tt` program:
+```
+# A simple program which shows mathematical operations.
+
+func main() {
+  int a;
+  int b;
+  int c;
+
+  a = 100;
+  b = 50;
+
+  # This should output '150'
+  c = a + b;
+  print(c);
+
+  # This should output '50'
+  c = a - b;
+  print(c);
+
+  # This should output '5000'
+  c = a * b;
+  print(c);
+
+  # This should output '2'
+  c = a / b;
+  print(c);
+
+  # This should output '0'
+  c = a % b;
+  print(c);
+
+  # Complex Expression. (4 + 2) * 7
+  a = 4;
+  b = 7;
+  c = (a + 2) * b;
+  print(c);
+}
+```
+
+The following output is the correct output:
+```
+Func
+Ident("main")
+LeftParen
+RightParen
+LeftCurly
+Int
+Ident("a")
+Semicolon
+Int
+Ident("b")
+Semicolon
+Int
+Ident("c")
+Semicolon
+Ident("a")
+Assign
+Num(100)
+Semicolon
+Ident("b")
+Assign
+Num(50)
+Semicolon
+Ident("c")
+Assign
+Ident("a")
+Plus
+Ident("b")
+Semicolon
+Print
+LeftParen
+Ident("c")
+RightParen
+Semicolon
+Ident("c")
+Assign
+Ident("a")
+Subtract
+Ident("b")
+Semicolon
+Print
+LeftParen
+Ident("c")
+RightParen
+Semicolon
+Ident("c")
+Assign
+Ident("a")
+Multiply
+Ident("b")
+Semicolon
+Print
+LeftParen
+Ident("c")
+RightParen
+Semicolon
+Ident("c")
+Assign
+Ident("a")
+Divide
+Ident("b")
+Semicolon
+Print
+LeftParen
+Ident("c")
+RightParen
+Semicolon
+Ident("c")
+Assign
+Ident("a")
+Modulus
+Ident("b")
+Semicolon
+Print
+LeftParen
+Ident("c")
+RightParen
+Semicolon
+Ident("a")
+Assign
+Num(4)
+Semicolon
+Ident("b")
+Assign
+Num(7)
+Semicolon
+Ident("c")
+Assign
+LeftParen
+Ident("a")
+Plus
+Num(2)
+RightParen
+Multiply
+Ident("b")
+Semicolon
+Print
+LeftParen
+Ident("c")
+RightParen
+Semicolon
+RightCurly
+```
+
 ### Submission
 A correct and complete lexer should be able to lex all the example programs correctly, transforming 
 the string into a list of tokens. At the end of lexing, print out the tokens using a for loop. An 
