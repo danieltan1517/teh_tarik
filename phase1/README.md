@@ -147,7 +147,8 @@ fn main() {
 
 Let's build a simple lexer that identifies numbers with multiple digits and 
 the basic operation `+`. The other operations such as `-`, `*`, `/` can be easily figured out by
-modifying the currrent example. A number token is parsed by finding the beginning index of the number 0-9,
+modifying the currrent example. We start with an index value of zero, and traverse through the entire string, adding tokens to the list of tokens.
+To randomly access a letter of a string, use `code.as_bytes()` to get the string array as a byte array. A number token is parsed by finding the beginning index of the number 0-9,
 finding the ending index of the number 0-9, and getting the substring token `code[start..end]`.
 
 ```
