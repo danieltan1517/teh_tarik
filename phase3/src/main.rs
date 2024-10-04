@@ -100,7 +100,7 @@ enum Token {
 }
 
 // This is a lexer that parses numbers/identifiers and math operations
-fn lex(mut code: &str) -> Result<Vec<Token>, String> {
+fn lex(code: &str) -> Result<Vec<Token>, String> {
   let bytes = code.as_bytes();
   let mut tokens: Vec<Token> = vec![];
 
