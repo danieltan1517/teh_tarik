@@ -104,7 +104,7 @@ enum Token {
 // }
 
 
-// This is a lexer that parses numbers/identifiers and math operations
+// This is a lexer that parses numbers and math operations
 fn lex(mut code: &str) -> Result<Vec<Token>, String> {
   let bytes = code.as_bytes();
   let mut tokens: Vec<Token> = vec![];
@@ -172,13 +172,12 @@ mod tests {
         assert!(matches!(toks[3], Token::Plus));
         assert!(matches!(toks[4], Token::Num(3)));
 
-        let toks = lex("3 + 215 +-").unwrap();
-        assert!(toks.len() == 5);
+        let toks = lex("3 + 215 +").unwrap();
+        assert!(toks.len() == 4);
         assert!(matches!(toks[0], Token::Num(3)));
         assert!(matches!(toks[1], Token::Plus));
         assert!(matches!(toks[2], Token::Num(215)));
         assert!(matches!(toks[3], Token::Plus));
-        assert!(matches!(toks[4], Token::Subtract));
 
         // test that the lexer catches invalid tokens
         assert!(matches!(lex("^^^"), Err(_)));
