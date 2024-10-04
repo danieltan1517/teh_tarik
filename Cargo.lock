@@ -15,10 +15,6 @@ name = "phase2"
 version = "0.1.0"
 
 [[package]]
-name = "phase2_example"
-version = "0.1.0"
-
-[[package]]
 name = "phase3"
 version = "0.1.0"
 

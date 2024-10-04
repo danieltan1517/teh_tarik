@@ -54,7 +54,7 @@ fn main() {
 
     println!("----------------------");
     println!("Finished Lexing the file {}", filename);
-    println!("Expression:");
+    println!("File Contents:");
     println!("{code}");
     println!("Here are the Results:");
     println!("----------------------");
@@ -106,212 +106,50 @@ enum Token {
 
 // This is a lexer that parses numbers/identifiers and math operations
 fn lex(mut code: &str) -> Result<Vec<Token>, String> {
+  let bytes = code.as_bytes();
   let mut tokens: Vec<Token> = vec![];
-  while code.len() > 0 {
-    let (success, token, rest) = lex_number(code);
-    if success {
-      code = rest; 
+
+  let mut i = 0;
+  while i < bytes.len() {
+    let c = bytes[i] as char;
+
+    match c {
+
+    '0'..='9' => {
+      let start = i;
+      i += 1;
+      while i < bytes.len() {
+        let digit = bytes[i] as char;
+        if digit >= '0' && digit <= '9' {
+          i += 1;
+        } else {
+          break;
+        }
+      }
+      let end = i;
+      let string_token = &code[start..end];
+      let number_value = string_token.parse::<i32>().unwrap();
+      let token = Token::Num(number_value);
       tokens.push(token);
-      continue;
-    } 
- 
-    let (success, rest) = lex_space(code);
-    if success {
-      code = rest;
-      continue;
     }
 
-    if code.starts_with("+") {
-      code = &code[1..];
+    '+' => {
       tokens.push(Token::Plus);
-      continue;
+      i += 1;
     }
 
-    if code.starts_with("-") {
-      code = &code[1..];
-      tokens.push(Token::Subtract);
-      continue;
+    ' ' | '\n' => {
+      i += 1;
     }
 
-    if code.starts_with("*") {
-      code = &code[1..];
-      tokens.push(Token::Multiply);
-      continue;
+    _ => {
+      return Err(format!("Unrecognized symbol '{}'", c));
     }
 
-    if code.starts_with("/") {
-      code = &code[1..];
-      tokens.push(Token::Divide);
-      continue;
     }
-
-    if code.starts_with("%") {
-      code = &code[1..];
-      tokens.push(Token::Modulus);
-      continue;
-    }
-
-    if code.starts_with("=") {
-      code = &code[1..];
-      tokens.push(Token::Assign);
-      continue;
-    }
-
-    let (success, token, rest) = lex_identifier(code);
-    if success {
-      code = rest;
-      tokens.push(token);
-      continue;
-    }
-
-    let symbol = unrecognized_symbol(code);
-    return Err(format!("Unidentified symbol {symbol}"));
-
   }
 
   return Ok(tokens);
-}
-
-fn lex_space(code: &str) -> (bool, &str) {
-  for letter in code.chars() {
-    if letter.is_whitespace() {
-      return (true, &code[1..]);
-    } else {
-      return (false, code);
-    }
-  }
-  return (false, code);
-}
-
-// lex numbers.
-fn lex_number(code: &str) -> (bool, Token, &str) {
-  enum StateMachine {
-    Start,
-    Number,
-  }
-
-  let mut success = false;
-  let mut state = StateMachine::Start;
-  let mut index = 0;
-  for letter in code.chars() {
-    match state {
-    StateMachine::Start => {
-      if letter >= '0' && letter <= '9' {
-        state = StateMachine::Number;
-        success = true;
-        index += 1;
-      } else {
-        return (false, Token::NotToken, "");
-      }
-    }
-
-    StateMachine::Number => {
-      if letter >= '0' && letter <= '9' {
-        state = StateMachine::Number;
-        success = true;
-        index += 1;
-      } else {
-        let num = code[..index].parse::<i32>().unwrap();
-        return (true, Token::Num(num), &code[index..]);
-      }
-    }
-
-    }
-  }
-
-  if success == true {
-    let num: i32 = code.parse::<i32>().unwrap();
-    return (true, Token::Num(num), "");
-  } else {
-    return (false, Token::NotToken, "");
-  }
-}
-
-// lex identifiers.
-fn lex_identifier(code: &str) -> (bool, Token, &str) {
-  enum StateMachine {
-    Start,
-    Ident,
-  }
-
-  let mut success = false;
-  let mut state = StateMachine::Start;
-  let mut index = 0;
-  for letter in code.chars() {
-    match state {
-    StateMachine::Start => {
-      if (letter >= 'a' && letter <= 'z') || (letter >= 'A' && letter <= 'Z'){
-        state = StateMachine::Ident;
-        success = true;
-        index += 1;
-      } else {
-        return (false, Token::NotToken, "");
-      }
-    }
-
-    StateMachine::Ident => {
-      if (letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z') || (letter >= '0' && letter <= '9') || letter == '_' {
-        state = StateMachine::Ident;
-        success = true;
-        index += 1;
-      } else {
-        let token = &code[..index];
-        return (true, create_identifier(token), &code[index..]);
-      }
-    }
-
-    }
-  }
-
-  if success == true {
-    return (true, create_identifier(code), "");
-  } else {
-    return (false, Token::NotToken, "");
-  }
-}
-
-fn unrecognized_symbol(code: &str) -> &str {
-  enum StateMachine {
-    Start,
-    Symbol,
-  }
-
-  let mut state_machine = StateMachine::Start;
-  let mut index = 0;
-  for letter in code.chars() {
-    match state_machine {
-    StateMachine::Start => {
-      state_machine = StateMachine::Symbol;
-      index += 1;
-    } 
-    
-    StateMachine::Symbol => {
-      if letter.is_whitespace() {
-        return &code[..index];
-      } else {
-        index += 1;
-      }
-    }
-
-    }
-  }
-  return &code[..index];
-} 
-
-fn create_identifier(code: &str) -> Token {
-  match code {
-  "func" => Token::Func,
-  "return" => Token::Return,
-  "int" => Token::Int,
-
-  // todo: implement all keywords...
-  // ... all keywords...
-
-  "read" => Token::Read,
-  "while" => Token::While,
-  "if" => Token::If,
-  _ => Token::Ident(String::from(code)),
-  }
 }
 
 // writing tests!
