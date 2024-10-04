@@ -919,6 +919,9 @@ the string into a list of tokens. At the end of lexing, print out the tokens usi
 example of this can be found in “phase1/src/main.rs”.
 
 ### Rubric
+
+Total Points: 100 points total
+
 Demo/Group Participation 10 points
 
 Proper Output for Example Test Cases 80 points (10 points each test case):
