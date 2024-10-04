@@ -539,6 +539,496 @@ Semicolon
 RightCurly
 ```
 
+#### array.tt
+
+Given the following `array.tt` example:
+```
+func main() {
+    int [4] array;
+
+    # Should print out '2'
+    array[0] = 2;
+    print(array[0]);
+
+    # Should print out '4'
+    array[1] = array[0] + array[0];
+    print(array[1]);
+
+    # Should print out '8'
+    array[2] = array[1] + 2 * 2;
+    print(array[2]);
+
+}
+```
+The following output is the correct output:
+```
+Func
+Ident("main")
+LeftParen
+RightParen
+LeftCurly
+Int
+LeftBracket
+Num(4)
+RightBracket
+Ident("array")
+Semicolon
+Ident("array")
+LeftBracket
+Num(0)
+RightBracket
+Assign
+Num(2)
+Semicolon
+Print
+LeftParen
+Ident("array")
+LeftBracket
+Num(0)
+RightBracket
+RightParen
+Semicolon
+Ident("array")
+LeftBracket
+Num(1)
+RightBracket
+Assign
+Ident("array")
+LeftBracket
+Num(0)
+RightBracket
+Plus
+Ident("array")
+LeftBracket
+Num(0)
+RightBracket
+Semicolon
+Print
+LeftParen
+Ident("array")
+LeftBracket
+Num(1)
+RightBracket
+RightParen
+Semicolon
+Ident("array")
+LeftBracket
+Num(2)
+RightBracket
+Assign
+Ident("array")
+LeftBracket
+Num(1)
+RightBracket
+Plus
+Num(2)
+Multiply
+Num(2)
+Semicolon
+Print
+LeftParen
+Ident("array")
+LeftBracket
+Num(2)
+RightBracket
+RightParen
+Semicolon
+RightCurly
+```
+
+#### function.tt
+
+Given the following `function.tt`:
+```
+func add(int a, int b) {
+    return a + b;
+}
+
+func mul(int a, int b) {
+     return a * b;
+}
+
+func main() {
+    int a;
+    int b;
+    int c;
+    a = 10;
+    b = 2;
+    c = add(a, b);
+    print(c);
+    c = mul(c, a + b);
+    print(c);
+}
+```
+The following output is the correct output:
+```
+Func
+Ident("add")
+LeftParen
+Int
+Ident("a")
+Comma
+Int
+Ident("b")
+RightParen
+LeftCurly
+Return
+Ident("a")
+Plus
+Ident("b")
+Semicolon
+RightCurly
+Func
+Ident("mul")
+LeftParen
+Int
+Ident("a")
+Comma
+Int
+Ident("b")
+RightParen
+LeftCurly
+Return
+Ident("a")
+Multiply
+Ident("b")
+Semicolon
+RightCurly
+Func
+Ident("main")
+LeftParen
+RightParen
+LeftCurly
+Int
+Ident("a")
+Semicolon
+Int
+Ident("b")
+Semicolon
+Ident("a")
+Assign
+Ident("add")
+LeftParen
+Num(10)
+Comma
+Num(2)
+RightParen
+Semicolon
+Print
+LeftParen
+Ident("a")
+RightParen
+Semicolon
+Ident("b")
+Assign
+Ident("mul")
+LeftParen
+Ident("a")
+Comma
+Ident("a")
+Plus
+Ident("b")
+RightParen
+Semicolon
+Print
+LeftParen
+Ident("b")
+RightParen
+Semicolon
+RightCurly
+```
+
+#### loop.tt
+
+Given the simple loop `loop.tt`:
+```
+func main() {
+    int i;
+    i = 0;
+    while i < 10 {
+        print(i);
+        i = i + 1;
+    }
+}
+```
+The following output is the correct output:
+```
+Func
+Ident("main")
+LeftParen
+RightParen
+LeftCurly
+Int
+Ident("i")
+Semicolon
+Ident("i")
+Assign
+Num(0)
+Semicolon
+While
+Ident("i")
+Less
+Num(10)
+LeftCurly
+Print
+LeftParen
+Ident("i")
+RightParen
+Semicolon
+Ident("i")
+Assign
+Ident("i")
+Plus
+Num(1)
+Semicolon
+RightCurly
+RightCurly
+```
+
+#### if.tt
+Given the following `if.tt`:
+```
+func main() {
+    int a;
+    int b;
+    int c;
+
+    
+    a = 100;
+    b = 50;
+    if a < b {
+        c = 0;
+    } else {
+        c = 1;
+    }
+
+    # Should print out '1'.
+    print(c);
+
+
+
+    a = 100;
+    b = 50;
+    if a >= b {
+        c = 0;
+    } else {
+        c = 1;
+    }
+
+    # Should print out '0'
+    print(c);
+}
+```
+
+The following is the correct lexical output:
+```
+Func
+Ident("main")
+LeftParen
+RightParen
+LeftCurly
+Int
+Ident("a")
+Semicolon
+Int
+Ident("b")
+Semicolon
+Int
+Ident("c")
+Semicolon
+Ident("a")
+Assign
+Num(100)
+Semicolon
+Ident("b")
+Assign
+Num(50)
+Semicolon
+If
+Ident("a")
+Less
+Ident("b")
+LeftCurly
+Ident("c")
+Assign
+Num(0)
+Semicolon
+RightCurly
+Else
+LeftCurly
+Ident("c")
+Assign
+Num(1)
+Semicolon
+RightCurly
+Print
+LeftParen
+Ident("c")
+RightParen
+Semicolon
+Ident("a")
+Assign
+Num(100)
+Semicolon
+Ident("b")
+Assign
+Num(50)
+Semicolon
+If
+Ident("a")
+GreaterEqual
+Ident("b")
+LeftCurly
+Ident("c")
+Assign
+Num(0)
+Semicolon
+RightCurly
+Else
+LeftCurly
+Ident("c")
+Assign
+Num(1)
+Semicolon
+RightCurly
+Print
+LeftParen
+Ident("c")
+RightParen
+Semicolon
+RightCurly
+```
+
+#### nested_loop.tt
+
+Given the following `nested_loop.tt`:
+```
+func main() {
+    int i;
+    int j;
+    i = 0;
+    while i < 2 {
+        j = 0;
+        while j < 3 {
+            print(j);
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+}
+```
+
+The following is the correct lexical output:
+```
+Func
+Ident("main")
+LeftParen
+RightParen
+LeftCurly
+Int
+Ident("i")
+Semicolon
+Int
+Ident("j")
+Semicolon
+Ident("i")
+Assign
+Num(0)
+Semicolon
+While
+Ident("i")
+Less
+Num(2)
+LeftCurly
+Ident("j")
+Assign
+Num(0)
+Semicolon
+While
+Ident("j")
+Less
+Num(3)
+LeftCurly
+Print
+LeftParen
+Ident("j")
+RightParen
+Semicolon
+Ident("j")
+Assign
+Ident("j")
+Plus
+Num(1)
+Semicolon
+RightCurly
+Ident("i")
+Assign
+Ident("i")
+Plus
+Num(1)
+Semicolon
+RightCurly
+RightCurly
+```
+
+#### break.tt
+
+Given the following `break.tt`:
+```
+func main() {
+    int i;
+    i = 0;
+    while i < 10 {
+        if i >= 4 {
+            break;
+        }
+        print(i);
+        i = i + 1;
+    }
+}
+```
+The following is the correct lexical output:
+```
+Func
+Ident("main")
+LeftParen
+RightParen
+LeftCurly
+Int
+Ident("i")
+Semicolon
+Ident("i")
+Assign
+Num(0)
+Semicolon
+While
+Ident("i")
+Less
+Num(10)
+LeftCurly
+If
+Ident("i")
+GreaterEqual
+Num(4)
+LeftCurly
+Break
+Semicolon
+RightCurly
+Print
+LeftParen
+Ident("i")
+RightParen
+Semicolon
+Ident("i")
+Assign
+Ident("i")
+Plus
+Num(1)
+Semicolon
+RightCurly
+RightCurly
+```
+
 ### Submission
 A correct and complete lexer should be able to lex all the example programs correctly, transforming 
 the string into a list of tokens. At the end of lexing, print out the tokens using a for loop. An 
