@@ -22,7 +22,7 @@ For Phase 3, you will be doing code generation for the following statements:
 * array
 * function
 
-You will also be doing semantic error checking (see the semantic error checking Phase 3 section)
+**You will also be doing semantic error checking (see the semantic error checking Phase 3 section)**
 
 ### Unsafe
 
