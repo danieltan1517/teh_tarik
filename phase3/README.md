@@ -201,6 +201,39 @@ struct Expression {
 }
 ```
 
+### Output
+
+In previous phases of the project, you created a lexical analyzer and parser for your custom 
+programming language. In this phase of the project, you will take a syntactically correct program, 
+verify it has no semantic errors, and generating the corresponding intermediate code for the given 
+program. The generated code will be executed using the provided interpreter.
+
+In every syntactically correct program written using the compiler, there must be at least one 
+function named “main”, which will be the entry point of the problem, and a program should be able 
+to define multiple functions in addition to “main”. “main” will take no parameters as an input, and 
+“main” does not return a value.
+
+Only integer scalar values can be passed as parameters to functions, and functions that are not main 
+must return a single integer value. Functions cannot take arrays as argument parameters. Multiple 
+return values are not supported, and functions outside of “main” cannot return nothing. All 
+functions must return exactly one single integer value.
+
+You can assume that all variable and function declarations will occur ahead of the time before usage
+of the variable or function. Any function declared after where it is used can be assumed to be an 
+error.
+
+Just like the previous phase, you should perform one-pass code generation and directly output the 
+generated code. There is no need to build or traverse a syntax tree. However, you will need to 
+maintain a symbol table during code generation.
+
+Do code generation **ONLY** for the following example programs:
+* add.tt
+* array.tt
+* function.tt
+* math.tt
+  
+We will do code generation for the other half of the example programs in the next and final phase.
+
 ### Generated Example IR Code
 
 Here are some examples of possible generated IR outputs. One can generate any IR code for the given code, as
@@ -483,4 +516,27 @@ In addition to IR code generation, you must also catch semantic errors. The sema
 You may optionally catch other possible semantic errors in addition to the ones list here (e.g. calling a function with the
 wrong number of parameters), but **that is optional** and not required.
 
+To catch semantic errors, you will need to create a data structure called a symbol table. A symbol table is a data structure 
+**you create** that keeps track of each identifier along with some identifier data associated with it. Any data structure or combination of data structures may be used 
+as a symbol table (e.g. arrays, linked lists, trees, hash tables). The most basic data structure you may create for this project is 
+an array, then using linear search on an array to catch semantic errors.
+
+### Rubric
+
+Phase 3 will be graded out of a total of 100 points. Partial credit will be given if a test case is 
+partially correct. Partial credit will be given if a test case is partially correct. Code correctness will 
+be tested using the “cargo run” and/or “cargo test” command.
+
+Demo/Group Participation/Code compiles 10 points
+
+Each of the following test cases are worth 20 points each:
+* add.tt
+* math.tt
+* array.tt
+* function.tt
+
+Error handling 10 points
+
+All projects can be turned in up to 1 week late. Each day the project is late, 3% will be deducted per
+day for up to 21%. After a week, projects will not be accepted. 
 
