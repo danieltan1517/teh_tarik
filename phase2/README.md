@@ -89,7 +89,7 @@ if matches!(token, Token::Func) {
 }
 ```
 
-### Lifetimes
+### Lifetimes (Optional. Not needed for this assignment)
 
 [Lifetimes Documentation](https://doc.rust-lang.org/rust-by-example/scope/lifetime.html)
 
