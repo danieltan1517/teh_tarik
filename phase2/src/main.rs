@@ -241,44 +241,6 @@ fn create_identifier(code: &str) -> Token {
   }
 }
 
-// the <'a> is the "lifetimes" type annotations in Rust.
-//
-fn peek<'a>(tokens: &'a Vec<Token>, index: usize) -> Option<&'a Token> {
-    if index < tokens.len() {
-        return Some(&tokens[index])
-    } else {
-        return None
-    }
-}
-
-fn peek_result<'a>(tokens: &'a Vec<Token>, index: usize) -> Result<&'a Token, String> {
-    if index < tokens.len() {
-        return Ok(&tokens[index])
-    } else {
-        return Err(String::from("expected a token, but got nothing"))
-    }
-}
-
-fn next<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Option<&'a Token> {
-    if *index < tokens.len() {
-        let ret = *index;
-        *index += 1;
-        return Some(&tokens[ret])
-    } else {
-        return None
-    }
-}
-
-fn next_result<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> Result<&'a Token, String> {
-    if *index < tokens.len() {
-        let ret = *index;
-        *index += 1;
-        return Ok(&tokens[ret])
-    } else {
-        return Err(String::from("expected a token, but got nothing"))
-    }
-}
-
 // parse programs with multiple functions
 // loop over everything, outputting generated code.
 fn parse_program(tokens: &Vec<Token>, index: &mut usize) -> Result<(), String> {
