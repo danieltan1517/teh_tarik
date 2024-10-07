@@ -195,31 +195,21 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<(), String>
 ```
 This only works when the Result Error return values match.
 
-### Simple Parsing Expression Exercise
-
-In the `src/main.rs` file associated with Phase 2, there is a parser for parsing an arbitrarily complex mathematical expressions.
-It takes a complex math expression, such as `1 + 2 * (3 + 4)`, and parses out the math expression. It returns an integer
-answer as a result from the expression.
-
-The grammar provided is one way to handle operator precedence expressions corrrectly.
-
-Can you figure out how to compute the correct answer to expression given the operator precedence?
-
 ### Building a Top Down Parser
 
 Start by creating a function called `parse_program`. It will take in a list of tokens and index marking where the parser is.
 It will return a return a `Result`, where `Result` can either be `Err` or it will be fine.
 ```
+// parse programs with multiple functions
+// loop over everything, outputting generated code.
 fn parse_program(tokens: &Vec<Token>, index: &mut usize) -> Result<(), String> {
-    loop {
-        match parse_function(tokens, index)? {
-        None => {
-            break;
-        }
-        Some(_) => {}
-        }
+    assert!(tokens.len() >= 1 && matches!(tokens[tokens.len() - 1], Token::End));
+    while !at_end(tokens, *index) {
+      match parse_function(tokens, index) {
+      Ok(()) => {}
+      Err(e) => { return Err(e); }
+      }
     }
-
     return Ok(());
 }
 ```
@@ -237,90 +227,48 @@ func main() {
 We can write `parse_function` like this:
 
 ```
-// parse function such as:
-// func main(int a, int b) {
-//    # ... statements here...
-//    # ...
-// }
-// a loop is done to handle statements.
-
-fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<Option<()>, String> {
+fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<(), String> {
     
-    match next(tokens, index) {
-    None => {
-        return Ok(None);
+    match tokens[*index] {
+    Token::Func => { *index += 1; }
+    _ => { return Err(String::from("functions must begin with func")); }
     }
-    Some(token) => {
-        if !matches!(token, Token::Func) {
-            return Err(String::from("functions must begin with func"));
+
+    match tokens[*index] {
+    Token::Ident(_) => { *index += 1; }
+    _  => { return Err(String::from("functions must have a function identifier"));}
+    }
+
+
+    match tokens[*index] {
+    Token::LeftParen => { *index += 1; }
+    _ => { return Err(String::from("expected '('"));}
+    }
+
+    match tokens[*index] {
+    Token::RightParen => { *index += 1; }
+    _ => { return Err(String::from("expected ')'"));}
+    }
+
+    match tokens[*index] {
+    Token::LeftCurly => { *index += 1; }
+    _ => { return Err(String::from("expected '{'"));}
+    }
+
+    while !matches!(tokens[*index], Token::RightCurly) {
+
+        match parse_statement(tokens, index) {
+        Ok(()) => {}
+        Err(e) => {return Err(e);}
         }
     }
 
-    }
-    match next_result(tokens, index)? {
-    Token::Ident(_) => {},
-    _  => {return Err(String::from("functions must have a function identifier"));}
-    };
-
-    if !matches!( next_result(tokens, index)?, Token::LeftParen) {
-        return Err(String::from("expected '('"));
+    match tokens[*index] {
+    Token::RightCurly => { *index += 1; }
+    _ => { return Err(String::from("expected '}'"));}
     }
 
-    loop {
-       match next_result(tokens, index)? {
-
-       Token::RightParen => {
-           break;
-       }
-
-       Token::Int => {
-           match next_result(tokens, index)? {
-           Token::Ident(_) => {
-               match peek_result(tokens, *index)? {
-               Token::Comma => {
-                   *index += 1;
-               }
-               Token::RightParen => {}
-               _ => {
-                   return Err(String::from("expected ',' or ')'"));
-               }
-
-               }
-           }
-           _ => {
-                return Err(String::from("expected ident function parameter"));
-           }
-
-           }
-       }
-
-       _ => {
-           return Err(String::from("expected 'int' keyword or ')' token"));
-       }
-
-       }
-    }
-
-
-    if !matches!(next_result(tokens, index)?, Token::LeftCurly) {
-        return Err(String::from("expected '{'"));
-    }
-
-    loop {
-        match parse_statement(tokens, index)? {
-        None => {
-            break;
-        }
-        Some(()) => {}
-        }
-    }
-
-
-    if !matches!(next_result(tokens, index)?, Token::RightCurly) {
-      return Err(String::from("expected '}'"));
-    }
-
-    return Ok(Some(()));
+    return Ok(());
 }
 ```
 
