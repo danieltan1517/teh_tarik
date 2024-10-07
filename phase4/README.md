@@ -30,6 +30,29 @@ statements within if statements. A user program should be able to define multipl
 condition results in true, the if code block should be executed. And if the if condition results in
 false, the else code block should be executed.
 
+### Output 
+In the previous Phase 3 of the project, you generated the corresponding intermediate code for the 
+given program. The generated code will be executed using the provided interpreter. You will do the 
+same for Phase 4, except generated code will now need to handle “while loops” and “if statements.”
+One should be able to nest loops inside loops, and nest if statements within if statements. A user 
+program should be able to define multiple loops within a program. In an if/else statement, if the if 
+condition results in true, the if code block should be executed. And if the if condition results in 
+false, the else code block should be executed.
+
+You should perform one-pass code generation and directly output the generated code. There is no 
+need to build or traverse a syntax tree. However, you will need to maintain a symbol table during 
+code generation.
+
+### Error handling
+If a “break” or “continue” is placed outside of a loop, the compiler should treat that as an error. 
+“break” and “continue” can only be used inside loops, and therefore any “break” or “continue” 
+statement outside a loop should be treated as an error. If an error occurs, do not generate any code, 
+instead, print out an error messsage such as “Error: break statement is outside a loop”.
+
+**The code generator may halt compilation on the first error message.** If there is a user error in 
+the high-level code, the code generator should not output any code. The compiler may optionally 
+catch additional error messages.
+
 ### Interpreter
 
 Copy the `interpreter.rs` file and paste it into your project. In your main file `main.rs`, do the following:
@@ -513,4 +536,20 @@ func main() {
 }
 ```
 
+### Rubric
+Phase 4 will be graded out of a total of 100 points. Partial credit will be given if a test case is 
+partially correct. Partial credit will be given if a test case is partially correct. Code correctness will 
+be tested using the “cargo run” and/or “cargo test” command.
 
+Demo/Group Participation/Code compiles 10 points
+
+The rest of the example programs are worth 20 points each:
+* loop.tt
+* if.tt
+* nested_loop.tt
+* break.tt
+  
+Error handling 10 points for handling break/continue outside of a loop.
+
+All projects can be turned in up to 1 week late. Each day the project is late, 3% will be deducted per
+day for up to 21%. After a week, projects will not be accepted.
