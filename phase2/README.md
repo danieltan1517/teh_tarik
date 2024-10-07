@@ -1,12 +1,16 @@
-# Building A Parser in Rust
+# Phase 2: Building A Parser in Rust
 
 ### Introduction
 
-Now that the lexer has been built, the parser takes the sequence of tokens, and identifies the grammar of the programming language based off of the sequence of tokens. If the lexer is the component of the compiler that identifies the “words” and “punctuation” of a programming language, the parser is the the component of the compiler that identifiers the “sentences” and “paragraphs” of the programming language.
+Now that the lexer has been built, we will now build the parser. A parser takes the sequence of tokens created by the lexer, and a creates structural representation of the input while checking for correct syntax. If the lexer is the component of the compiler that identifies the “words” and “punctuation” of a programming language, the parser is the the component of the compiler that identifiers the “sentences” and “paragraphs” of the programming language.
 
-The job of the parser is to identify which tokens represent while loops, if statements, function headers, the function body, variable declarations, and constant variables. If the parser finds a misplaced sequence of tokens, the parser should notify the programming language user of the misplaced tokens.
+The job of the parser is to identify which sequence of tokens represent while loops, if statements, function headers, the function body, etc. If the parser finds a misplaced sequence of tokens, the parser should notify the programming language user of the misplaced tokens.
 
 In Phase 2, we will be creating a parser. A parser takes a sequence of tokens, and determines what the sequence of tokens represents. For example, a sequence of tokens in order: identifier, equals sign, number (e.g. “variable = 0”) will be recognized as a statement by the parser. The output of the parser will be a print out of the production rules of the parser.
+
+### Parser Grammer
+
+A parser is based off of a context free grammar. You can find the proper grammar of the Teh Tarik Programming Lanuage [here](https://cs.ucr.edu/~dtan004/CS152_Parsing.pdf)
 
 ### Building a Parser
 
@@ -72,6 +76,9 @@ parse_declaration_statement(tokens: Array<Token>) -> Result(value,Error) {
     return Err("expected semicolon ';' or '=' assignment operator")
 }
 ```
+
+**In Phase 2, when you call a function when doing top-down recursive descent parsing, make sure to propagate the error back up the calling stack so that the error can be caught correctly.**
+
 
 ### matches!() statement
 
@@ -165,6 +172,28 @@ The `?` operator is an error propagation operation. If result of the operation c
 stops and the error value is returned. In order for `?` operator to function correctly, the error value type **must** match the 
 the function it is returning from. If the result is not an error, the `?` operator unwraps the `Result` or `Option` automatically
 for you. This technique can simplify the error handling code in Rust.
+
+**In Phase 2, when you call a function, make sure to propagate the error back up the calling stack so that the error can be caught correctly.**
+
+For example, if you have two functions `parse_function` and `parse_statement`, you can simplify the match statements using the `?` operator in the following way:
+```
+fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<(), String> {
+
+    // 1.) this is the conventional match statement
+    match parse_statement(tokens, index) {
+        Ok(()) => {}
+        Err(e) => {return Err(e);}
+    }
+
+    // 2.) this is another shorthand equivalent way to write 1.) 
+    parse_statement(tokens, index)?;
+}
+
+fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<(), String> {
+    todo!()
+}
+```
+This only works when the Result Error return values match.
 
 ### Simple Parsing Expression Exercise
 
@@ -298,8 +327,42 @@ fn parse_function(tokens: &Vec<Token>, index: &mut usize) -> Result<Option<()>, 
 Writing `parse_statement` follows a similar pattern to `parse_function` and `parse_program`. You can
 modify the `parse_expression` example to make it into a statement.
 
+### Submission
+A correct and complete parser should be able to parse all the example programs correctly, transforming 
+the string into a list of tokens. At the end of lexing, print out the tokens using a for loop. An 
+example of this can be found in “phase2/src/main.rs”.
 
+A parser must have the following functionality:
+* It must detect correct grammars correctly
+* Reject incorrect grammars
 
+Error messages need to be coherent and useful for users of the programming language. Examples of
+good error messages can be something like: “Error: missing ‘;’ semicolon at the end of the 
+statement.” Or “Error: missing ‘)’ right parenthesis.”
+
+The parser should be able to detect the grammar correctly. If a given language input is missing either left or right parenthesis, it is incorrect. A valid language input must have balanced curly braces, and inputs with imbalanced curly brace must be rejected.
+
+### Rubric
+
+Total Points: 100 points total
+
+Demo/Group Participation 10 points
+
+Proper Output for Example Test Cases 80 points (10 points each test case):
+
+* add.tt
+* array.tt
+* break.tt
+* function.tt
+* if.tt
+* loop.tt
+* math.tt
+* nested_loop.tt
+  
+Proper Output for Parser Errors 10 points
+
+All projects can be turned in up to 1 week late. Each day the project is late, 3% will be deducted per
+day for up to 21%. After a week, projects will not be accepted.
 
 
 
