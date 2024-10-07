@@ -149,7 +149,7 @@ Let's build a simple lexer that identifies numbers with multiple digits and
 the basic operation `+`. The other operations such as `-`, `*`, `/` can be easily figured out by
 modifying the currrent example. We start with an index value of zero, and traverse through the entire string, adding tokens to the list of tokens.
 To randomly access a letter of a string, use `code.as_bytes()` to get the string array as a byte array. A number token is parsed by finding the beginning index of the number 0-9,
-finding the ending index of the number 0-9, and getting the substring token `code[start..end]`.
+finding the ending index of the number 0-9, and getting the substring token `code[start..end]`. We append an `End` Token at the end of lexing, which simplifies the parsing implementation in Phase 2.
 
 ```
 // This is a lexer that parses numbers and math operations
@@ -197,6 +197,7 @@ fn lex(mut code: &str) -> Result<Vec<Token>, String> {
     }
   }
 
+  tokens.push(Token::End);
   return Ok(tokens);
 }
 ```
@@ -275,6 +276,7 @@ Ident("c")
 RightParen
 Semicolon
 RightCurly
+End
 ```
 
 #### math.tt
@@ -422,6 +424,7 @@ Ident("c")
 RightParen
 Semicolon
 RightCurly
+End
 ```
 
 #### array.tt
@@ -519,6 +522,7 @@ RightBracket
 RightParen
 Semicolon
 RightCurly
+End
 ```
 
 #### function.tt
@@ -621,6 +625,7 @@ Ident("b")
 RightParen
 Semicolon
 RightCurly
+End
 ```
 
 #### loop.tt
@@ -668,6 +673,7 @@ Num(1)
 Semicolon
 RightCurly
 RightCurly
+End
 ```
 
 #### if.tt
@@ -782,6 +788,7 @@ Ident("c")
 RightParen
 Semicolon
 RightCurly
+End
 ```
 
 #### nested_loop.tt
@@ -854,6 +861,7 @@ Num(1)
 Semicolon
 RightCurly
 RightCurly
+End
 ```
 
 #### break.tt
@@ -912,6 +920,7 @@ Num(1)
 Semicolon
 RightCurly
 RightCurly
+End
 ```
 
 ### Submission
