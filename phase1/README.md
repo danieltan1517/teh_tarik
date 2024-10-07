@@ -97,6 +97,7 @@ For your lexer, this is the complete list of tokens you need to identify for Pha
 |!=                    | NotEqual     |
 |variable_name         | Ident        |
 |10311517              | Num          |
+|End                   | Marks the end of list of tokens. |
 
 #### Variable Identifier Names
 
