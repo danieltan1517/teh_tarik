@@ -10,7 +10,7 @@ In Phase 2, we will be creating a parser. A parser takes a sequence of tokens, a
 
 ### Parser Grammer
 
-A parser is based off of a context free grammar. You can find the proper grammar of the Teh Tarik Programming Lanuage [here](https://cs.ucr.edu/~dtan004/CS152_Parsing.pdf)
+A parser is a program that parses a context free grammar. You can find the proper grammar of the Teh Tarik Programming Lanuage [here](https://cs.ucr.edu/~dtan004/CS152_Parsing.pdf)
 
 ### Building a Parser
 
