@@ -1,0 +1,8 @@
+# Error. Misplaced comma
+func main() {
+    if a, b {
+
+    } else {
+
+    }
+}

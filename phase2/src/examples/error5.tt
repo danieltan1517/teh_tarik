@@ -1,0 +1,5 @@
+# Error. Missing semicolon.
+func main() {
+  a = 10
+  b = 100;
+}
