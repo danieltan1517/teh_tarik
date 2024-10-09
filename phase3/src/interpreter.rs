@@ -405,7 +405,7 @@ fn get_id(function: &mut FunctionBytecode) -> i32 {
 fn read_integer_value(variables: &HashMap<i32, i32>, op: &Op) -> i32 {
     match op {
     Op::Num(num) => *num,
-    Op::Var(id) => *variables.get(&id).unwrap(),
+    Op::Var(id) => variables[&id],
     }
 }
 
@@ -1438,7 +1438,7 @@ fn read_memory(variables: &HashMap<i32, i32>, arrays: &HashMap<i32, Vec<i32>>, r
     MemRead::IntVar(id) => Ok(*variables.get(&id).unwrap()),
     MemRead::Number(number) => Ok(*number),
     MemRead::ArrayRead(id, index) => {
-        let array = arrays.get(&id).unwrap();
+        let array = &arrays[&id];
         let variable = read_integer_value(&variables, &index);
         if variable >= 0 && (variable as usize) < array.len() {
             Ok(array[variable as usize])
