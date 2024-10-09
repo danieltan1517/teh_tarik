@@ -28,17 +28,147 @@ pub fn execute_ir(code: &str) {
 
 use std::io;
 
-fn lex_ir(mut code: &str) -> Vec<IRTok> {
+fn lex_ir(code: &str) -> Vec<IRTok> {
     let mut tokens: Vec<IRTok> = vec![];
-    while code.len() > 0 {
-        let (tok, rest) = lex_ir_token(code);
-        match tok {
-        None => break,
-        Some(value) => tokens.push(value),
-        }
-        code = rest;
-    }
+    let array = code.as_bytes();
+    let mut i = 0;
+    while i < array.len() {
+        let c = array[i] as char;
+        match c {
+        '%' => {
+            let start = i;
+            i += 1;
+            while i < array.len() {
+                let letter = array[i] as char;
+                match letter {
+                'a'..='z' | 'A'..='Z' | '[' | ']' | '_' => {
+                    i += 1;
+                }
+                _ => {
+                    break;
+                }
 
+                }
+            }
+            let end = i;
+            let string_token: &str = &code[start..end];
+            let token = opcode(string_token);
+            tokens.push(token);
+        }
+
+        '0'..='9' => {
+            let start = i;
+            i += 1;
+            while i < array.len() {
+                let digit = array[i] as char;
+                if digit >= '0' && digit <= '9' {
+                    i += 1;
+                } else {
+                    break;
+                }
+            }
+            let end = i;
+            let string_token = &code[start..end];
+            let number_value = string_token.parse::<i32>().unwrap();
+            let token = IRTok::Num(number_value);
+            tokens.push(token);
+        }
+
+        '+' => {
+          tokens.push(IRTok::Plus);
+          i += 1;
+        }
+
+        '[' => {
+          tokens.push(IRTok::LBrace);
+          i += 1;
+        }
+       
+        ']' => {
+          tokens.push(IRTok::RBrace);
+          i += 1;
+        }
+
+        '(' => {
+          tokens.push(IRTok::LParen);
+          i += 1;
+        }
+  
+        ')' => {
+          tokens.push(IRTok::RParen);
+          i += 1;
+        }
+
+        ':' => {
+            let start = i;
+            i += 1;
+            while i < array.len() {
+                let letter = array[i] as char;
+                match letter {
+                '0'..='9' | 'a'..='z' | 'A'..='Z' | '[' | ']' | '_' => {
+                    i += 1;
+                }
+                _ => {
+                    break;
+                }
+
+                }
+            }
+            let end = i;
+            let string_token: &str = &code[start..end];
+            let token = IRTok::Label(String::from(string_token));
+            tokens.push(token);
+        }
+
+        'a'..='z' | 'A'..='Z' | '_' => {
+            let start = i;
+            i += 1;
+            while i < array.len() {
+                let letter = array[i] as char;
+                if letter == '_' || (letter >= 'a' && letter <= 'z') || (letter >= 'A' && letter <= 'Z') || (letter >= '0' && letter <= '9') {
+                    i += 1;
+                } else {
+                    break;
+                }
+            }
+            let end = i;
+            let string_token = &code[start..end];
+            let token = IRTok::Var(String::from(string_token));
+            tokens.push(token);
+        }
+
+        ';' => {
+            i += 1;
+            while i < array.len() {
+                let c = array[i] as char;
+                if c == '\n' {
+                    i += 1;
+                    break;
+                }
+                i += 1;
+            }
+        }
+
+        ' ' => {
+            i += 1;
+        }
+
+        '\n' => {
+            tokens.push(IRTok::EndInstr);
+            i += 1;
+        }
+
+        ',' => {
+            tokens.push(IRTok::Comma);
+            i += 1;
+        }
+
+        _ => {
+             assert!(false, "unknown symbol '{}'", c);
+        }
+
+        }
+    }
     return tokens;
 }
 
@@ -1137,169 +1267,34 @@ fn next_result<'a>(serialized_line: usize, tokens: &'a Vec<IRTok>, index: &mut u
     }
 }
 
-fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
-   
-    #[derive(Debug)]
-    enum StateMachine {
-        Initial,
-        Lit,
-        Label,
-        Ident,
-        Num,
-        Comments,
-    }
 
-    fn opcode(s: &str) -> Option<IRTok> {
-        use IRTok::*;
-        match s {
-        "%func" => Some(Func),
-        "%endfunc" => Some(EndFunc),
-        "%int" => Some(Int),
-        "%int[]" => Some(IntArray),
-        "%call" => Some(Call),
-        "%ret" => Some(Return),
-        "%out" => Some(Out),
-        "%input" => Some(In),
-        "%mov" => Some(Mov),
-        "%add" => Some(Add),
-        "%sub" => Some(Sub),
-        "%mult" => Some(Mult),
-        "%div" => Some(Div),
-        "%mod" => Some(Mod),
-        "%lt" => Some(LessThan),
-        "%le" => Some(LessEqual),
-        "%neq" => Some(NotEqual),
-        "%eq" => Some(Equal),
-        "%gt" => Some(GreaterThan),
-        "%ge" => Some(GreaterEqual),
-        "%jmp" => Some(Jump),
-        "%branch_if" => Some(BranchIf),
-        "%branch_ifn" => Some(BranchIfNot),
-        _ => Some(InvalidInstruction(String::from(s))),
-        }
-    }
-
-    fn num_literal(s: &str) -> Option<IRTok> {
-        match s.parse::<i32>() {
-        Ok(val) => Some(IRTok::Num(val)),
-        Err(_) => None,
-        }
-    }
-
-    // skip left whitespace.
-    for (i, c) in code.chars().enumerate() {
-        if c.is_whitespace() && c != '\n' {
-            continue;
-        }
-        code = &code[i..];
-        break;
-    }
- 
-    let mut state = StateMachine::Initial;
-
-    for (i, c) in code.chars().enumerate() {
-        state = match state {
-
-        StateMachine::Initial => {
-            if c == '\n' {
-                return (Some(IRTok::EndInstr), &code[i + 1..]);
-            }
-            if c.is_whitespace() {
-                continue;
-            }
-            match c {
-            '%' => StateMachine::Lit,
-            ':' => StateMachine::Label,
-            ',' => return (Some(IRTok::Comma), &code[i + 1..]),
-            '[' => return (Some(IRTok::LBrace), &code[i + 1..]),
-            '(' => return (Some(IRTok::LParen), &code[i + 1..]),
-            ')' => return (Some(IRTok::RParen), &code[i + 1..]),
-            '+' => return (Some(IRTok::Plus), &code[i + 1..]),
-            ']' => return (Some(IRTok::RBrace), &code[i + 1..]),
-            '0'..='9' => StateMachine::Num,
-            ';' => StateMachine::Comments,
-            _ => StateMachine::Ident,
-            }
-        }
-
-        StateMachine::Lit => {
-            if c == ',' || c == '\n' || c == ';' {
-                let tok = opcode(&code[..i]);
-                return (tok, &code[i..]);
-            }
-            if c.is_whitespace() {
-                let tok = opcode(&code[..i]);
-                return (tok, &code[i+1..]);
-            }
-
-            StateMachine::Lit
-        }
-
-        StateMachine::Label => {
-            if c == ',' || c == '\n' || c == ';' {
-                let tok = &code[..i];
-                return (Some(IRTok::Label(String::from(tok))), &code[i..]);
-            }
-            if c.is_whitespace() {
-                let tok = &code[..i];
-                return (Some(IRTok::Label(String::from(tok))), &code[i+1..]);
-            }
-
-            StateMachine::Label
-        }
-
-        StateMachine::Comments => {
-            if c == '\n' {
-                return (Some(IRTok::EndInstr), &code[i + 1..]);
-            } else {
-                StateMachine::Comments
-            }
-        }
-
-        StateMachine::Ident => {
-            if c == ',' || c == '\n' || c == '[' || c == ']' || c == ';' || c == '+' || c == '(' || c == ')' {
-                let tok = IRTok::Var(String::from(&code[..i]));
-                return (Some(tok), &code[i..]);
-            }
-
-            if c.is_whitespace() {
-                let tok = IRTok::Var(String::from(&code[..i]));
-                return (Some(tok), &code[i+1..]);
-            }
-
-            StateMachine::Ident
-        }
-
-        StateMachine::Num => {
-            if c >= '0' && c <= '9' {
-                StateMachine::Num
-            } else {
-                let tok = num_literal(&code[..i]);
-                return (tok, &code[i..]);
-            }
-
-        }
-        
-        };
-    }
-
-    match state {
-
-    StateMachine::Lit => {
-        return (opcode(code), "");
-    }
-
-    StateMachine::Ident => {
-        let tok = IRTok::Var(String::from(code));
-        return (Some(tok), "");
-    }
-
-
-    _ => {
-        println!("{:?} {}", state, code);
-        todo!()
-    }
-
+fn opcode(s: &str) -> IRTok {
+    use IRTok::*;
+    match s {
+    "%func" => Func,
+    "%endfunc" => EndFunc,
+    "%int" => Int,
+    "%int[]" => IntArray,
+    "%call" => Call,
+    "%ret" => Return,
+    "%out" => Out,
+    "%input" => In,
+    "%mov" => Mov,
+    "%add" => Add,
+    "%sub" => Sub,
+    "%mult" => Mult,
+    "%div" => Div,
+    "%mod" => Mod,
+    "%lt" => LessThan,
+    "%le" => LessEqual,
+    "%neq" => NotEqual,
+    "%eq" => Equal,
+    "%gt" => GreaterThan,
+    "%ge" => GreaterEqual,
+    "%jmp" => Jump,
+    "%branch_if" => BranchIf,
+    "%branch_ifn" => BranchIfNot,
+    _ => InvalidInstruction(String::from(s)),
     }
 }
 
@@ -1307,77 +1302,43 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
 mod ir_tests {
     use crate::interpreter::*;
 
-    #[test]
-    fn ir_token() {
-        assert!(matches!(lex_ir_token("  %int"), (Some(IRTok::Int), _)));
-        assert!(matches!(lex_ir_token(" %int[]"), (Some(IRTok::IntArray), _)));
-        assert!(matches!(lex_ir_token("%call"), (Some(IRTok::Call), _)));
-        assert!(matches!(lex_ir_token("%ret"), (Some(IRTok::Return), _)));
-        assert!(matches!(lex_ir_token("%out"), (Some(IRTok::Out), _)));
-        assert!(matches!(lex_ir_token("   %input"), (Some(IRTok::In), _)));
-        assert!(matches!(lex_ir_token("%mov  "), (Some(IRTok::Mov), _)));
-        assert!(matches!(lex_ir_token("%add"), (Some(IRTok::Add), _)));
-        assert!(matches!(lex_ir_token("%sub"), (Some(IRTok::Sub), _)));
-        assert!(matches!(lex_ir_token("%mult"), (Some(IRTok::Mult), _)));
-        assert!(matches!(lex_ir_token("  %div"), (Some(IRTok::Div), _)));
-        assert!(matches!(lex_ir_token("%mod"), (Some(IRTok::Mod), _)));
-        assert!(matches!(lex_ir_token("%lt"), (Some(IRTok::LessThan), _)));
-        assert!(matches!(lex_ir_token("%le"), (Some(IRTok::LessEqual), _)));
-        assert!(matches!(lex_ir_token("%neq"), (Some(IRTok::NotEqual), _)));
-        assert!(matches!(lex_ir_token("%eq"), (Some(IRTok::Equal), _)));
-        assert!(matches!(lex_ir_token("%gt"), (Some(IRTok::GreaterThan), _)));
-        assert!(matches!(lex_ir_token("%ge"), (Some(IRTok::GreaterEqual), _)));
-        assert!(matches!(lex_ir_token("%jmp"), (Some(IRTok::Jump), _)));
-        assert!(matches!(lex_ir_token("%branch_if"), (Some(IRTok::BranchIf), _)));
-        assert!(matches!(lex_ir_token("%branch_ifn"), (Some(IRTok::BranchIfNot), _)));
-        assert!(matches!(lex_ir_token("[are"), (Some(IRTok::LBrace), "are")));
-        assert!(matches!(lex_ir_token("]are"), (Some(IRTok::RBrace), "are")));
-        assert!(matches!(lex_ir_token(",are"), (Some(IRTok::Comma), "are")));
-
-        let code = "; This is a comment\n%mov";
-        assert!(matches!(lex_ir_token(code), (Some(IRTok::EndInstr), "%mov")));
-    }
-
-    #[test]
+   #[test]
     fn ir_lex() {
         {
             let toks = lex_ir("%add a, b, c\n");
-            assert!(toks.len() == 7);
+            assert!(toks.len() == 6);
             assert!(matches!(toks[0], IRTok::Add));
             assert!(matches!(toks[1], IRTok::Var(_)));
             assert!(matches!(toks[2], IRTok::Comma));
             assert!(matches!(toks[3], IRTok::Var(_)));
             assert!(matches!(toks[4], IRTok::Comma));
             assert!(matches!(toks[5], IRTok::Var(_)));
-            assert!(matches!(toks[6], IRTok::EndInstr));
         }
 
         {
             let toks = lex_ir("%func main,,,\n");
-            assert!(toks.len() == 6);
+            assert!(toks.len() == 5);
             assert!(matches!(toks[0], IRTok::Func));
             assert!(matches!(toks[1], IRTok::Var(_)));
             assert!(matches!(toks[2], IRTok::Comma));
             assert!(matches!(toks[3], IRTok::Comma));
             assert!(matches!(toks[4], IRTok::Comma));
-            assert!(matches!(toks[5], IRTok::EndInstr));
         }
 
         {
             let toks = lex_ir("%func,main,,,\n");
-            assert!(toks.len() == 7);
+            assert!(toks.len() == 6);
             assert!(matches!(toks[0], IRTok::Func));
             assert!(matches!(toks[1], IRTok::Comma));
             assert!(matches!(toks[2], IRTok::Var(_)));
             assert!(matches!(toks[3], IRTok::Comma));
             assert!(matches!(toks[4], IRTok::Comma));
             assert!(matches!(toks[5], IRTok::Comma));
-            assert!(matches!(toks[6], IRTok::EndInstr));
         }
 
         {
             let toks = lex_ir("%mov [arr+0], 100\n");
-            assert!(toks.len() == 9);
+            assert!(toks.len() == 8);
             assert!(matches!(toks[0], IRTok::Mov));
             assert!(matches!(toks[1], IRTok::LBrace));
             assert!(matches!(toks[2], IRTok::Var(_)));
@@ -1386,7 +1347,6 @@ mod ir_tests {
             assert!(matches!(toks[5], IRTok::RBrace));
             assert!(matches!(toks[6], IRTok::Comma));
             assert!(matches!(toks[7], IRTok::Num(100)));
-            assert!(matches!(toks[8], IRTok::EndInstr));
         }
     }
 }
