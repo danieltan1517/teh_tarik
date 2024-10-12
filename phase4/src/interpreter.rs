@@ -28,17 +28,148 @@ pub fn execute_ir(code: &str) {
 
 use std::io;
 
-fn lex_ir(mut code: &str) -> Vec<IRTok> {
+fn lex_ir(code: &str) -> Vec<IRTok> {
     let mut tokens: Vec<IRTok> = vec![];
-    while code.len() > 0 {
-        let (tok, rest) = lex_ir_token(code);
-        match tok {
-        None => break,
-        Some(value) => tokens.push(value),
-        }
-        code = rest;
-    }
+    let array = code.as_bytes();
+    let mut i = 0;
+    while i < array.len() {
+        let c = array[i] as char;
+        match c {
+        '%' => {
+            let start = i;
+            i += 1;
+            while i < array.len() {
+                let letter = array[i] as char;
+                match letter {
+                'a'..='z' | 'A'..='Z' | '[' | ']' | '_' => {
+                    i += 1;
+                }
+                _ => {
+                    break;
+                }
 
+                }
+            }
+            let end = i;
+            let string_token: &str = &code[start..end];
+            let token = opcode(string_token);
+            tokens.push(token);
+        }
+
+        '0'..='9' => {
+            let start = i;
+            i += 1;
+            while i < array.len() {
+                let digit = array[i] as char;
+                if digit >= '0' && digit <= '9' {
+                    i += 1;
+                } else {
+                    break;
+                }
+            }
+            let end = i;
+            let string_token = &code[start..end];
+            let number_value = string_token.parse::<i32>().unwrap();
+            let token = IRTok::Num(number_value);
+            tokens.push(token);
+        }
+
+        '+' => {
+          tokens.push(IRTok::Plus);
+          i += 1;
+        }
+
+        '[' => {
+          tokens.push(IRTok::LBrace);
+          i += 1;
+        }
+       
+        ']' => {
+          tokens.push(IRTok::RBrace);
+          i += 1;
+        }
+
+        '(' => {
+          tokens.push(IRTok::LParen);
+          i += 1;
+        }
+  
+        ')' => {
+          tokens.push(IRTok::RParen);
+          i += 1;
+        }
+
+        ':' => {
+            let start = i;
+            i += 1;
+            while i < array.len() {
+                let letter = array[i] as char;
+                match letter {
+                '0'..='9' | 'a'..='z' | 'A'..='Z' | '[' | ']' | '_' => {
+                    i += 1;
+                }
+                _ => {
+                    break;
+                }
+
+                }
+            }
+            let end = i;
+            let string_token: &str = &code[start..end];
+            let token = IRTok::Label(String::from(string_token));
+            tokens.push(token);
+        }
+
+        'a'..='z' | 'A'..='Z' | '_' => {
+            let start = i;
+            i += 1;
+            while i < array.len() {
+                let letter = array[i] as char;
+                if letter == '_' || (letter >= 'a' && letter <= 'z') || (letter >= 'A' && letter <= 'Z') || (letter >= '0' && letter <= '9') {
+                    i += 1;
+                } else {
+                    break;
+                }
+            }
+            let end = i;
+            let string_token = &code[start..end];
+            let token = IRTok::Var(String::from(string_token));
+            tokens.push(token);
+        }
+
+        ';' => {
+            i += 1;
+            while i < array.len() {
+                let c = array[i] as char;
+                if c == '\n' {
+                    i += 1;
+                    break;
+                }
+                i += 1;
+            }
+        }
+
+        ' ' => {
+            i += 1;
+        }
+
+        '\n' => {
+            tokens.push(IRTok::EndInstr);
+            i += 1;
+        }
+
+        ',' => {
+            tokens.push(IRTok::Comma);
+            i += 1;
+        }
+
+        _ => {
+             assert!(false, "unknown symbol '{}'", c);
+        }
+
+        }
+    }
+    tokens.push(IRTok::End);
     return tokens;
 }
 
@@ -48,7 +179,15 @@ fn parse_ir(tokens: &Vec<IRTok>, idx: &mut usize) -> Result< Vec<FunctionBytecod
     let mut serialized_line: usize = 1;
     let mut vector: Vec<FunctionBytecode> = vec![];
     let mut has_main: bool = false;
-    while let Some(bytecode) = parse_func_ir(&mut serialized_line, tokens, idx)? {
+
+    while !matches!(tokens[*idx], IRTok::End) {
+        if matches!(tokens[*idx], IRTok::EndInstr) {
+            serialized_line += 1;
+            *idx += 1;
+            continue;
+        }
+        
+        let bytecode = parse_func_ir(&mut serialized_line, tokens, idx)?;
         for func in &vector {
           if func.name.eq(&bytecode.name) {
             return error(MAX_LINE, format!("Error. Two functions with the same name {}", func.name));
@@ -117,7 +256,7 @@ fn error<T>(line: usize, message: String) -> Result<T, IRError> {
 
 use std::fmt;
 
-fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<Option<FunctionBytecode>, IRError> {
+fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<FunctionBytecode, IRError> {
     let mut function_bytecode = FunctionBytecode {
         name:String::from(""),
         parameters:0,
@@ -126,28 +265,13 @@ fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usi
         body: vec![],
     };
 
-    loop {
-        if let Some(IRTok::EndInstr) = peek(tokens, *idx) {
-             *serialized_line += 1;
-             *idx += 1;
-             continue;
-        }
-
-        break;
+    if !matches!(tokens[*idx], IRTok::Func) {
+        return error(*serialized_line, format!("func IR must begin with '%func'"));
     }
 
-    match next(tokens, idx) {
-    Some(token) => {
-        if !matches!(token, IRTok::Func) {
-            return error(*serialized_line, format!("func IR must begin with '%func'"));
-        }
-    }
- 
-    None => {
-        return Ok(None);
-    }
-    }
-    match next_result(*serialized_line, tokens, idx)? {
+    *idx += 1;
+
+    match next_result(tokens, idx) {
     IRTok::Var(func_ident) => {
         function_bytecode.name = func_ident.clone();
     }
@@ -156,14 +280,14 @@ fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usi
 
     };
 
-    match peek_result(*serialized_line, tokens, *idx)? {
+    match tokens[*idx] {
     IRTok::LParen => {
         *idx += 1;
         loop {
-            match next_result(*serialized_line, tokens, idx)? {
+            match next_result(tokens, idx) {
             IRTok::RParen => break,
             IRTok::Int => {
-                match next_result(*serialized_line, tokens, idx)? {
+                match &next_result(tokens, idx) {
                 IRTok::Var(param) => {
                     if let Some(_) = function_bytecode.variables.get(param) {
                         let f = format!("identifier {param} already defined");
@@ -173,7 +297,7 @@ fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usi
                         let id = get_id(&mut function_bytecode);
                         function_bytecode.variables.insert(param.clone(), VariableType::IntVar(id));
                     }
-                    if matches!(peek_result(*serialized_line, tokens, *idx)?, IRTok::Comma) {
+                    if matches!(tokens[*idx], IRTok::Comma) {
                         *idx += 1;
                     }
                 }
@@ -193,7 +317,7 @@ fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usi
 
     }
 
-    if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::EndInstr) {
+    if !matches!(next_result(tokens, idx), IRTok::EndInstr) {
         return error(*serialized_line, String::from("%func header must end with a newline"));
     }
 
@@ -210,7 +334,7 @@ fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usi
         line += 1;
     }
 
-    if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::EndFunc) {
+    if !matches!(next_result(tokens, idx), IRTok::EndFunc) {
         return error(*serialized_line, String::from("func IR needs to end in '%endfunc'"));
     }
 
@@ -253,11 +377,12 @@ fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usi
         _ => {}
         }
     }
-    return Ok(Some(function_bytecode));
+    return Ok(function_bytecode);
 }
 
 use std::collections::HashMap;
 
+#[derive(Debug)]
 struct FunctionBytecode {
     name: String,
     parameters: usize,
@@ -275,7 +400,7 @@ fn get_id(function: &mut FunctionBytecode) -> i32 {
 fn read_integer_value(variables: &HashMap<i32, i32>, op: &Op) -> i32 {
     match op {
     Op::Num(num) => *num,
-    Op::Var(id) => *variables.get(&id).unwrap(),
+    Op::Var(id) => variables[&id],
     }
 }
 
@@ -610,23 +735,18 @@ fn lookup_variable_dest_id(line: usize, function: &FunctionBytecode, ident: &Str
 fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut FunctionBytecode, labels_hash: &mut HashMap<String, usize>, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<Bytecode, IRError> {
 
     // get rid of newlines.
-    loop {
-        if matches!(peek_result(*serialized_line, tokens, *idx)?, IRTok::EndInstr) {
-            *serialized_line += 1;
-            *idx += 1;
-        } else {
-            break;
-        }
+    while matches!(tokens[*idx], IRTok::EndInstr) {
+        *serialized_line += 1;
+        *idx += 1;
     }
 
     let bytecode: Bytecode;
-    let opcode = peek_result(*serialized_line, tokens, *idx)?;
-    match opcode {
+    match &tokens[*idx] {
 
     // declarations.
     IRTok::Int => {
         *idx += 1;
-        let ident = match next_result(*serialized_line, tokens, idx)? {
+        let ident = match next_result(tokens, idx) {
         IRTok::Var(ident) => ident,
         _ => return error(*serialized_line, String::from("invalid instruction. expected identifier like '%int variable'")),
         };
@@ -643,16 +763,16 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 
     IRTok::IntArray => {
         *idx += 1;
-        let ident = match next_result(*serialized_line, tokens, idx)? {
+        let ident = match next_result(tokens, idx) {
         IRTok::Var(ident) => ident,
         _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%int[] array, 10'")),
         };
 
-        if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Comma) {
+        if !matches!(next_result(tokens, idx), IRTok::Comma) {
             return error(*serialized_line, String::from("invalid instruction. expected format like '%int[] array, 10'"));
         }
 
-        let num = match next_result(*serialized_line, tokens, idx)? {
+        let num = match next_result(tokens, idx) {
         IRTok::Num(num) => *num,
         IRTok::Var(ident) => {
           return error(*serialized_line, format!("array cannot be a variable '{ident}' length. must be a number."));
@@ -677,16 +797,16 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
     // function calling routines.
     IRTok::Call => {
         *idx += 1;
-        let op = match next_result(*serialized_line, tokens, idx)? {
+        let op = match next_result(tokens, idx) {
         IRTok::Var(ident) => lookup_variable_dest_id(*serialized_line, function, ident)?,
         _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%call value, function(a,b)'")),
         };
 
-        if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Comma) {
+        if !matches!(next_result(tokens, idx), IRTok::Comma) {
             return error(*serialized_line, String::from("invalid instruction. missing comma ',' in between '%call value, function(a,b)'"));
         }
 
-        let func_id = match peek_result(*serialized_line, tokens, *idx)? {
+        let func_id = match tokens[*idx] {
         IRTok::Var(_) => {
             let func_id = *idx;
             *idx += 1;
@@ -695,19 +815,19 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
         _ => return error(*serialized_line, String::from("invalid instruction. expected function name from '%call value, function(a,b)'")),
         };
 
-        if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::LParen) {
+        if !matches!(next_result(tokens, idx), IRTok::LParen) {
             return error(*serialized_line, String::from("invalid instruction. expected '(' in between '%call value, function(a,b)'"));
         }
 
         let mut parameters = vec![];
         loop {
-            match peek_result(*serialized_line, tokens, *idx)? {
+            match &tokens[*idx] {
             IRTok::RParen => break,
             IRTok::Var(ident) => {
                 *idx += 1;
                 let param = lookup_integer_variable_id(*serialized_line, function, ident)?;
                 parameters.push(param);
-                if matches!(peek_result(*serialized_line, tokens, *idx)?, IRTok::Comma) {
+                if matches!(tokens[*idx], IRTok::Comma) {
                     *idx += 1;
                 }
             }
@@ -715,7 +835,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             IRTok::Num(num) => {
                 *idx += 1;
                 parameters.push(Op::Num(*num));
-                if matches!(peek_result(*serialized_line, tokens, *idx)?, IRTok::Comma) {
+                if matches!(tokens[*idx], IRTok::Comma) {
                     *idx += 1;
                 }
             }
@@ -724,7 +844,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             }
         }
 
-        if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::RParen) {
+        if !matches!(next_result(tokens, idx), IRTok::RParen) {
             return error(*serialized_line, String::from("invalid instruction. missing ')' in between '%call value, function(a,b)'"));
         }
         bytecode = Bytecode::Call(op, func_id, parameters);
@@ -732,7 +852,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 
     IRTok::Return => {
         *idx += 1;
-        let op = match next_result(*serialized_line, tokens, idx)? {
+        let op = match next_result(tokens, idx) {
         IRTok::Var(ident) => lookup_integer_variable_id(*serialized_line, function, ident)?,
         IRTok::Num(num) => Op::Num(*num),
         _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%ret variable'")),
@@ -743,7 +863,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
     // input/output routines.
     IRTok::Out => {
         *idx += 1;
-        let src = match next_result(*serialized_line, tokens, idx)? {
+        let src = match next_result(tokens, idx) {
         IRTok::Var(ident) => lookup_integer_variable_id(*serialized_line, function, ident)?,
         IRTok::Num(num) => Op::Num(*num),
         _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%out variable'")),
@@ -753,7 +873,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 
     IRTok::In => {
         *idx += 1;
-        let src = match next_result(*serialized_line, tokens, idx)? {
+        let src = match next_result(tokens, idx) {
         IRTok::Var(ident) => lookup_variable_dest_id(*serialized_line, function, ident)?,
         _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%input variable'")),
         };
@@ -763,15 +883,15 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
     // mathematical operators.
     IRTok::Mov => {
         *idx += 1;
-        match next_result(*serialized_line, tokens, idx)? {
+        match next_result(tokens, idx) {
         IRTok::Var(ident) => {
             let dest = lookup_variable_dest_id(*serialized_line, function, ident)?;
 
-            if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Comma) {
+            if !matches!(next_result(tokens, idx), IRTok::Comma) {
                 return error(*serialized_line, String::from("invalid instruction. missing comma. expected format like '%mov variable, 10'"));
             }
             
-            let src = match next_result(*serialized_line, tokens, idx)? {
+            let src = match next_result(tokens, idx) {
             IRTok::Var(ident) => {
                 if let Some(id) = function.variables.get(ident) {
                      match id {
@@ -790,7 +910,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             }
 
             IRTok::LBrace => {
-                match (next_result(*serialized_line, tokens,idx)?, next_result(*serialized_line, tokens,idx)?, next_result(*serialized_line, tokens,idx)?, next_result(*serialized_line, tokens,idx)?) {
+                match (next_result(tokens,idx), next_result(tokens,idx), next_result(tokens,idx), next_result(tokens,idx)) {
                 (IRTok::Var(array), IRTok::Plus, IRTok::Num(index), IRTok::RBrace) => {
                     if let Some(id) = function.variables.get(array) {
                         match id {
@@ -842,7 +962,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
         }
 
         IRTok::LBrace => {
-            let dest = match next_result(*serialized_line, tokens, idx)? {
+            let dest = match next_result(tokens, idx) {
             IRTok::Var(ident) => {
                 if let Some(id) = function.variables.get(ident) {
                     match id {
@@ -864,25 +984,25 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'")),
             };
 
-            if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Plus) {
+            if !matches!(next_result(tokens, idx), IRTok::Plus) {
                 return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'"));
             }
 
-            let index = match next_result(*serialized_line, tokens, idx)? {
+            let index = match next_result(tokens, idx) {
             IRTok::Var(id) => lookup_integer_variable_id(*serialized_line, function, id)?,
             IRTok::Num(num) => Op::Num(*num),
             _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'")),
             };
 
-            if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::RBrace) {
+            if !matches!(next_result(tokens, idx), IRTok::RBrace) {
                 return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'"));
             }
 
-            if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Comma) {
+            if !matches!(next_result(tokens, idx), IRTok::Comma) {
                 return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'"));
             }
 
-            let src = match next_result(*serialized_line, tokens, idx)? {
+            let src = match next_result(tokens, idx) {
             IRTok::Var(ident) => {
                 if let Some(id) = function.variables.get(ident) {
                      match id {
@@ -983,7 +1103,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
     //Label,
     IRTok::Jump => {
         *idx += 1;
-        match peek_result(*serialized_line, tokens, *idx)? {
+        match tokens[*idx] {
         IRTok::Label(_) => {
             bytecode = Bytecode::Jmp(*idx);
             *idx += 1;
@@ -1001,24 +1121,24 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             return error(*serialized_line, format!("label {} already defined.", name));
         }
         bytecode = Bytecode::Label;
-        if !matches!(peek_result(*serialized_line, tokens, *idx)?, IRTok::EndInstr) {
+        if !matches!(tokens[*idx], IRTok::EndInstr) {
             return error(*serialized_line, format!("invalid opcode '{}'. labels can be declared using ':label'", name));
         }
     }
 
     IRTok::BranchIf => {
         *idx += 1;
-        let dest = match next_result(*serialized_line, tokens, idx)? {
+        let dest = match next_result(tokens, idx) {
         IRTok::Var(ident) => lookup_integer_variable_id(*serialized_line, function, ident)?,
         IRTok::Num(num) => Op::Num(*num),
         _ => return error(*serialized_line, String::from("%branch_if requires an identifier 'TF'")),
         };
 
-        if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Comma) {
+        if !matches!(next_result(tokens, idx), IRTok::Comma) {
             return error(*serialized_line, String::from("missing comma ',' from %branch_if instruction."));
         }
 
-        match peek_result(*serialized_line, tokens, *idx)? {
+        match tokens[*idx] {
         IRTok::Label(_) => {
             bytecode = Bytecode::BranchIf(dest, *idx);
             *idx += 1;
@@ -1029,17 +1149,17 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 
     IRTok::BranchIfNot => {
         *idx += 1;
-        let dest = match next_result(*serialized_line, tokens, idx)? {
+        let dest = match next_result(tokens, idx) {
         IRTok::Var(ident) => lookup_integer_variable_id(*serialized_line, function, ident)?,
         IRTok::Num(num) => Op::Num(*num),
         _ => return error(*serialized_line, String::from("%branch_ifn requires an identifier 'TF'")),
         };
 
-        if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Comma) {
+        if !matches!(next_result(tokens, idx), IRTok::Comma) {
             return error(*serialized_line, String::from("missing ',' from %branch_ifn instruction."));
         }
 
-        match peek_result(*serialized_line, tokens, *idx)? {
+        match tokens[*idx] {
         IRTok::Label(_) => {
             bytecode = Bytecode::BranchIfn(dest, *idx);
             *idx += 1;
@@ -1063,7 +1183,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 
     }
 
-    if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::EndInstr) {
+    if !matches!(next_result(tokens, idx), IRTok::EndInstr) {
         return error(*serialized_line, String::from("expected newline."));
     }
 
@@ -1073,26 +1193,26 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 }
 
 fn addr_code3(serialized_line: usize, function: &FunctionBytecode, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<(i32, Op, Op), IRError> {
-    let dest = match next_result(serialized_line, tokens, idx)? {
+    let dest = match next_result(tokens, idx) {
     IRTok::Var(ident) => lookup_variable_dest_id(serialized_line, function, ident)?,
     _ => return error(serialized_line, String::from("invalid dest.")),
     };
 
-    if !matches!(next_result(serialized_line, tokens, idx)?, IRTok::Comma) {
+    if !matches!(next_result(tokens, idx), IRTok::Comma) {
         return error(serialized_line, String::from("invalid instruction. expected comma between dest and src1."));
     }
     
-    let src1 = match next_result(serialized_line, tokens, idx)? {
+    let src1 = match next_result(tokens, idx) {
     IRTok::Var(ident) => lookup_integer_variable_id(serialized_line, function, ident)?,
     IRTok::Num(num) => Op::Num(*num),
     _ => return error(serialized_line, String::from("invalid src1.")),
     };
 
-    if !matches!(next_result(serialized_line, tokens, idx)?, IRTok::Comma) {
+    if !matches!(next_result(tokens, idx), IRTok::Comma) {
         return error(serialized_line, String::from("invalid instruction. expected comma between src1 and src2."));
     }
 
-    let src2 = match next_result(serialized_line, tokens, idx)? {
+    let src2 = match next_result(tokens, idx) {
     IRTok::Var(ident) => lookup_integer_variable_id(serialized_line, function, ident)?,
     IRTok::Num(num) => Op::Num(*num),
     _ => return error(serialized_line, String::from("invalid src2.")),
@@ -1101,205 +1221,40 @@ fn addr_code3(serialized_line: usize, function: &FunctionBytecode, tokens: &Vec<
     return Ok((dest, src1, src2));
 }
 
-fn next<'a>(tokens: &'a Vec<IRTok>, index: &mut usize) -> Option<&'a IRTok> {
-    if *index < tokens.len() {
-        let ret = *index;
-        *index += 1;
-        return Some(&tokens[ret])
-    } else {
-        return None
-    }
+fn next_result<'a>(tokens: &'a Vec<IRTok>, index: &mut usize) -> &'a IRTok {
+    let ret = *index;
+    *index += 1;
+    &tokens[ret]
 }
 
-fn peek_result<'a>(serialized_line: usize, tokens: &'a Vec<IRTok>, index: usize) -> Result<&'a IRTok, IRError> {
-    if index < tokens.len() {
-        return Ok(&tokens[index]);
-    } else {
-        return error(serialized_line, String::from("unexpected end."));
-    }
-}
 
-fn peek<'a>(tokens: &'a Vec<IRTok>, index: usize) -> Option<&'a IRTok>{
-    if index < tokens.len() {
-        return Some(&tokens[index])
-    } else {
-        return None
-    }
-}
-
-fn next_result<'a>(serialized_line: usize, tokens: &'a Vec<IRTok>, index: &mut usize) -> Result<&'a IRTok, IRError> {
-    if *index < tokens.len() {
-        let ret = *index;
-        *index += 1;
-        return Ok(&tokens[ret])
-    } else {
-        return error(serialized_line, String::from("unexpected end."))
-    }
-}
-
-fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
-   
-    #[derive(Debug)]
-    enum StateMachine {
-        Initial,
-        Lit,
-        Label,
-        Ident,
-        Num,
-        Comments,
-    }
-
-    fn opcode(s: &str) -> Option<IRTok> {
-        use IRTok::*;
-        match s {
-        "%func" => Some(Func),
-        "%endfunc" => Some(EndFunc),
-        "%int" => Some(Int),
-        "%int[]" => Some(IntArray),
-        "%call" => Some(Call),
-        "%ret" => Some(Return),
-        "%out" => Some(Out),
-        "%input" => Some(In),
-        "%mov" => Some(Mov),
-        "%add" => Some(Add),
-        "%sub" => Some(Sub),
-        "%mult" => Some(Mult),
-        "%div" => Some(Div),
-        "%mod" => Some(Mod),
-        "%lt" => Some(LessThan),
-        "%le" => Some(LessEqual),
-        "%neq" => Some(NotEqual),
-        "%eq" => Some(Equal),
-        "%gt" => Some(GreaterThan),
-        "%ge" => Some(GreaterEqual),
-        "%jmp" => Some(Jump),
-        "%branch_if" => Some(BranchIf),
-        "%branch_ifn" => Some(BranchIfNot),
-        _ => Some(InvalidInstruction(String::from(s))),
-        }
-    }
-
-    fn num_literal(s: &str) -> Option<IRTok> {
-        match s.parse::<i32>() {
-        Ok(val) => Some(IRTok::Num(val)),
-        Err(_) => None,
-        }
-    }
-
-    // skip left whitespace.
-    for (i, c) in code.chars().enumerate() {
-        if c.is_whitespace() && c != '\n' {
-            continue;
-        }
-        code = &code[i..];
-        break;
-    }
- 
-    let mut state = StateMachine::Initial;
-
-    for (i, c) in code.chars().enumerate() {
-        state = match state {
-
-        StateMachine::Initial => {
-            if c == '\n' {
-                return (Some(IRTok::EndInstr), &code[i + 1..]);
-            }
-            if c.is_whitespace() {
-                continue;
-            }
-            match c {
-            '%' => StateMachine::Lit,
-            ':' => StateMachine::Label,
-            ',' => return (Some(IRTok::Comma), &code[i + 1..]),
-            '[' => return (Some(IRTok::LBrace), &code[i + 1..]),
-            '(' => return (Some(IRTok::LParen), &code[i + 1..]),
-            ')' => return (Some(IRTok::RParen), &code[i + 1..]),
-            '+' => return (Some(IRTok::Plus), &code[i + 1..]),
-            ']' => return (Some(IRTok::RBrace), &code[i + 1..]),
-            '0'..='9' => StateMachine::Num,
-            ';' => StateMachine::Comments,
-            _ => StateMachine::Ident,
-            }
-        }
-
-        StateMachine::Lit => {
-            if c == ',' || c == '\n' || c == ';' {
-                let tok = opcode(&code[..i]);
-                return (tok, &code[i..]);
-            }
-            if c.is_whitespace() {
-                let tok = opcode(&code[..i]);
-                return (tok, &code[i+1..]);
-            }
-
-            StateMachine::Lit
-        }
-
-        StateMachine::Label => {
-            if c == ',' || c == '\n' || c == ';' {
-                let tok = &code[..i];
-                return (Some(IRTok::Label(String::from(tok))), &code[i..]);
-            }
-            if c.is_whitespace() {
-                let tok = &code[..i];
-                return (Some(IRTok::Label(String::from(tok))), &code[i+1..]);
-            }
-
-            StateMachine::Label
-        }
-
-        StateMachine::Comments => {
-            if c == '\n' {
-                return (Some(IRTok::EndInstr), &code[i + 1..]);
-            } else {
-                StateMachine::Comments
-            }
-        }
-
-        StateMachine::Ident => {
-            if c == ',' || c == '\n' || c == '[' || c == ']' || c == ';' || c == '+' || c == '(' || c == ')' {
-                let tok = IRTok::Var(String::from(&code[..i]));
-                return (Some(tok), &code[i..]);
-            }
-
-            if c.is_whitespace() {
-                let tok = IRTok::Var(String::from(&code[..i]));
-                return (Some(tok), &code[i+1..]);
-            }
-
-            StateMachine::Ident
-        }
-
-        StateMachine::Num => {
-            if c >= '0' && c <= '9' {
-                StateMachine::Num
-            } else {
-                let tok = num_literal(&code[..i]);
-                return (tok, &code[i..]);
-            }
-
-        }
-        
-        };
-    }
-
-    match state {
-
-    StateMachine::Lit => {
-        return (opcode(code), "");
-    }
-
-    StateMachine::Ident => {
-        let tok = IRTok::Var(String::from(code));
-        return (Some(tok), "");
-    }
-
-
-    _ => {
-        println!("{:?} {}", state, code);
-        todo!()
-    }
-
+fn opcode(s: &str) -> IRTok {
+    use IRTok::*;
+    match s {
+    "%func" => Func,
+    "%endfunc" => EndFunc,
+    "%int" => Int,
+    "%int[]" => IntArray,
+    "%call" => Call,
+    "%ret" => Return,
+    "%out" => Out,
+    "%input" => In,
+    "%mov" => Mov,
+    "%add" => Add,
+    "%sub" => Sub,
+    "%mult" => Mult,
+    "%div" => Div,
+    "%mod" => Mod,
+    "%lt" => LessThan,
+    "%le" => LessEqual,
+    "%neq" => NotEqual,
+    "%eq" => Equal,
+    "%gt" => GreaterThan,
+    "%ge" => GreaterEqual,
+    "%jmp" => Jump,
+    "%branch_if" => BranchIf,
+    "%branch_ifn" => BranchIfNot,
+    _ => InvalidInstruction(String::from(s)),
     }
 }
 
@@ -1307,77 +1262,43 @@ fn lex_ir_token(mut code: &str) -> (Option<IRTok>, &str) {
 mod ir_tests {
     use crate::interpreter::*;
 
-    #[test]
-    fn ir_token() {
-        assert!(matches!(lex_ir_token("  %int"), (Some(IRTok::Int), _)));
-        assert!(matches!(lex_ir_token(" %int[]"), (Some(IRTok::IntArray), _)));
-        assert!(matches!(lex_ir_token("%call"), (Some(IRTok::Call), _)));
-        assert!(matches!(lex_ir_token("%ret"), (Some(IRTok::Return), _)));
-        assert!(matches!(lex_ir_token("%out"), (Some(IRTok::Out), _)));
-        assert!(matches!(lex_ir_token("   %input"), (Some(IRTok::In), _)));
-        assert!(matches!(lex_ir_token("%mov  "), (Some(IRTok::Mov), _)));
-        assert!(matches!(lex_ir_token("%add"), (Some(IRTok::Add), _)));
-        assert!(matches!(lex_ir_token("%sub"), (Some(IRTok::Sub), _)));
-        assert!(matches!(lex_ir_token("%mult"), (Some(IRTok::Mult), _)));
-        assert!(matches!(lex_ir_token("  %div"), (Some(IRTok::Div), _)));
-        assert!(matches!(lex_ir_token("%mod"), (Some(IRTok::Mod), _)));
-        assert!(matches!(lex_ir_token("%lt"), (Some(IRTok::LessThan), _)));
-        assert!(matches!(lex_ir_token("%le"), (Some(IRTok::LessEqual), _)));
-        assert!(matches!(lex_ir_token("%neq"), (Some(IRTok::NotEqual), _)));
-        assert!(matches!(lex_ir_token("%eq"), (Some(IRTok::Equal), _)));
-        assert!(matches!(lex_ir_token("%gt"), (Some(IRTok::GreaterThan), _)));
-        assert!(matches!(lex_ir_token("%ge"), (Some(IRTok::GreaterEqual), _)));
-        assert!(matches!(lex_ir_token("%jmp"), (Some(IRTok::Jump), _)));
-        assert!(matches!(lex_ir_token("%branch_if"), (Some(IRTok::BranchIf), _)));
-        assert!(matches!(lex_ir_token("%branch_ifn"), (Some(IRTok::BranchIfNot), _)));
-        assert!(matches!(lex_ir_token("[are"), (Some(IRTok::LBrace), "are")));
-        assert!(matches!(lex_ir_token("]are"), (Some(IRTok::RBrace), "are")));
-        assert!(matches!(lex_ir_token(",are"), (Some(IRTok::Comma), "are")));
-
-        let code = "; This is a comment\n%mov";
-        assert!(matches!(lex_ir_token(code), (Some(IRTok::EndInstr), "%mov")));
-    }
-
-    #[test]
+   #[test]
     fn ir_lex() {
         {
             let toks = lex_ir("%add a, b, c\n");
-            assert!(toks.len() == 7);
+            assert!(toks.len() == 6);
             assert!(matches!(toks[0], IRTok::Add));
             assert!(matches!(toks[1], IRTok::Var(_)));
             assert!(matches!(toks[2], IRTok::Comma));
             assert!(matches!(toks[3], IRTok::Var(_)));
             assert!(matches!(toks[4], IRTok::Comma));
             assert!(matches!(toks[5], IRTok::Var(_)));
-            assert!(matches!(toks[6], IRTok::EndInstr));
         }
 
         {
             let toks = lex_ir("%func main,,,\n");
-            assert!(toks.len() == 6);
+            assert!(toks.len() == 5);
             assert!(matches!(toks[0], IRTok::Func));
             assert!(matches!(toks[1], IRTok::Var(_)));
             assert!(matches!(toks[2], IRTok::Comma));
             assert!(matches!(toks[3], IRTok::Comma));
             assert!(matches!(toks[4], IRTok::Comma));
-            assert!(matches!(toks[5], IRTok::EndInstr));
         }
 
         {
             let toks = lex_ir("%func,main,,,\n");
-            assert!(toks.len() == 7);
+            assert!(toks.len() == 6);
             assert!(matches!(toks[0], IRTok::Func));
             assert!(matches!(toks[1], IRTok::Comma));
             assert!(matches!(toks[2], IRTok::Var(_)));
             assert!(matches!(toks[3], IRTok::Comma));
             assert!(matches!(toks[4], IRTok::Comma));
             assert!(matches!(toks[5], IRTok::Comma));
-            assert!(matches!(toks[6], IRTok::EndInstr));
         }
 
         {
             let toks = lex_ir("%mov [arr+0], 100\n");
-            assert!(toks.len() == 9);
+            assert!(toks.len() == 8);
             assert!(matches!(toks[0], IRTok::Mov));
             assert!(matches!(toks[1], IRTok::LBrace));
             assert!(matches!(toks[2], IRTok::Var(_)));
@@ -1386,7 +1307,6 @@ mod ir_tests {
             assert!(matches!(toks[5], IRTok::RBrace));
             assert!(matches!(toks[6], IRTok::Comma));
             assert!(matches!(toks[7], IRTok::Num(100)));
-            assert!(matches!(toks[8], IRTok::EndInstr));
         }
     }
 }
@@ -1445,6 +1365,7 @@ enum IRTok {
 
     Num(i32),
     Var(String),
+    End,
 }
 
 #[derive(Debug, Clone)]
@@ -1478,7 +1399,7 @@ fn read_memory(variables: &HashMap<i32, i32>, arrays: &HashMap<i32, Vec<i32>>, r
     MemRead::IntVar(id) => Ok(*variables.get(&id).unwrap()),
     MemRead::Number(number) => Ok(*number),
     MemRead::ArrayRead(id, index) => {
-        let array = arrays.get(&id).unwrap();
+        let array = &arrays[&id];
         let variable = read_integer_value(&variables, &index);
         if variable >= 0 && (variable as usize) < array.len() {
             Ok(array[variable as usize])
