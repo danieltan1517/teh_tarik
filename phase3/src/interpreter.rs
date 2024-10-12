@@ -169,6 +169,7 @@ fn lex_ir(code: &str) -> Vec<IRTok> {
 
         }
     }
+    tokens.push(IRTok::End);
     return tokens;
 }
 
@@ -178,7 +179,15 @@ fn parse_ir(tokens: &Vec<IRTok>, idx: &mut usize) -> Result< Vec<FunctionBytecod
     let mut serialized_line: usize = 1;
     let mut vector: Vec<FunctionBytecode> = vec![];
     let mut has_main: bool = false;
-    while let Some(bytecode) = parse_func_ir(&mut serialized_line, tokens, idx)? {
+
+    while !matches!(tokens[*idx], IRTok::End) {
+        if matches!(tokens[*idx], IRTok::EndInstr) {
+            serialized_line += 1;
+            *idx += 1;
+            continue;
+        }
+        
+        let bytecode = parse_func_ir(&mut serialized_line, tokens, idx)?;
         for func in &vector {
           if func.name.eq(&bytecode.name) {
             return error(MAX_LINE, format!("Error. Two functions with the same name {}", func.name));
@@ -247,7 +256,7 @@ fn error<T>(line: usize, message: String) -> Result<T, IRError> {
 
 use std::fmt;
 
-fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<Option<FunctionBytecode>, IRError> {
+fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<FunctionBytecode, IRError> {
     let mut function_bytecode = FunctionBytecode {
         name:String::from(""),
         parameters:0,
@@ -256,28 +265,13 @@ fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usi
         body: vec![],
     };
 
-    loop {
-        if let Some(IRTok::EndInstr) = peek(tokens, *idx) {
-             *serialized_line += 1;
-             *idx += 1;
-             continue;
-        }
-
-        break;
+    if !matches!(tokens[*idx], IRTok::Func) {
+        return error(*serialized_line, format!("func IR must begin with '%func'"));
     }
 
-    match next(tokens, idx) {
-    Some(token) => {
-        if !matches!(token, IRTok::Func) {
-            return error(*serialized_line, format!("func IR must begin with '%func'"));
-        }
-    }
- 
-    None => {
-        return Ok(None);
-    }
-    }
-    match next_result(*serialized_line, tokens, idx)? {
+    *idx += 1;
+
+    match next_result(tokens, idx) {
     IRTok::Var(func_ident) => {
         function_bytecode.name = func_ident.clone();
     }
@@ -286,14 +280,14 @@ fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usi
 
     };
 
-    match peek_result(*serialized_line, tokens, *idx)? {
+    match tokens[*idx] {
     IRTok::LParen => {
         *idx += 1;
         loop {
-            match next_result(*serialized_line, tokens, idx)? {
+            match next_result(tokens, idx) {
             IRTok::RParen => break,
             IRTok::Int => {
-                match next_result(*serialized_line, tokens, idx)? {
+                match &next_result(tokens, idx) {
                 IRTok::Var(param) => {
                     if let Some(_) = function_bytecode.variables.get(param) {
                         let f = format!("identifier {param} already defined");
@@ -303,7 +297,7 @@ fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usi
                         let id = get_id(&mut function_bytecode);
                         function_bytecode.variables.insert(param.clone(), VariableType::IntVar(id));
                     }
-                    if matches!(peek_result(*serialized_line, tokens, *idx)?, IRTok::Comma) {
+                    if matches!(tokens[*idx], IRTok::Comma) {
                         *idx += 1;
                     }
                 }
@@ -323,7 +317,7 @@ fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usi
 
     }
 
-    if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::EndInstr) {
+    if !matches!(next_result(tokens, idx), IRTok::EndInstr) {
         return error(*serialized_line, String::from("%func header must end with a newline"));
     }
 
@@ -340,7 +334,7 @@ fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usi
         line += 1;
     }
 
-    if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::EndFunc) {
+    if !matches!(next_result(tokens, idx), IRTok::EndFunc) {
         return error(*serialized_line, String::from("func IR needs to end in '%endfunc'"));
     }
 
@@ -383,11 +377,12 @@ fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usi
         _ => {}
         }
     }
-    return Ok(Some(function_bytecode));
+    return Ok(function_bytecode);
 }
 
 use std::collections::HashMap;
 
+#[derive(Debug)]
 struct FunctionBytecode {
     name: String,
     parameters: usize,
@@ -740,23 +735,18 @@ fn lookup_variable_dest_id(line: usize, function: &FunctionBytecode, ident: &Str
 fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut FunctionBytecode, labels_hash: &mut HashMap<String, usize>, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<Bytecode, IRError> {
 
     // get rid of newlines.
-    loop {
-        if matches!(peek_result(*serialized_line, tokens, *idx)?, IRTok::EndInstr) {
-            *serialized_line += 1;
-            *idx += 1;
-        } else {
-            break;
-        }
+    while matches!(tokens[*idx], IRTok::EndInstr) {
+        *serialized_line += 1;
+        *idx += 1;
     }
 
     let bytecode: Bytecode;
-    let opcode = peek_result(*serialized_line, tokens, *idx)?;
-    match opcode {
+    match &tokens[*idx] {
 
     // declarations.
     IRTok::Int => {
         *idx += 1;
-        let ident = match next_result(*serialized_line, tokens, idx)? {
+        let ident = match next_result(tokens, idx) {
         IRTok::Var(ident) => ident,
         _ => return error(*serialized_line, String::from("invalid instruction. expected identifier like '%int variable'")),
         };
@@ -773,16 +763,16 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 
     IRTok::IntArray => {
         *idx += 1;
-        let ident = match next_result(*serialized_line, tokens, idx)? {
+        let ident = match next_result(tokens, idx) {
         IRTok::Var(ident) => ident,
         _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%int[] array, 10'")),
         };
 
-        if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Comma) {
+        if !matches!(next_result(tokens, idx), IRTok::Comma) {
             return error(*serialized_line, String::from("invalid instruction. expected format like '%int[] array, 10'"));
         }
 
-        let num = match next_result(*serialized_line, tokens, idx)? {
+        let num = match next_result(tokens, idx) {
         IRTok::Num(num) => *num,
         IRTok::Var(ident) => {
           return error(*serialized_line, format!("array cannot be a variable '{ident}' length. must be a number."));
@@ -807,16 +797,16 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
     // function calling routines.
     IRTok::Call => {
         *idx += 1;
-        let op = match next_result(*serialized_line, tokens, idx)? {
+        let op = match next_result(tokens, idx) {
         IRTok::Var(ident) => lookup_variable_dest_id(*serialized_line, function, ident)?,
         _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%call value, function(a,b)'")),
         };
 
-        if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Comma) {
+        if !matches!(next_result(tokens, idx), IRTok::Comma) {
             return error(*serialized_line, String::from("invalid instruction. missing comma ',' in between '%call value, function(a,b)'"));
         }
 
-        let func_id = match peek_result(*serialized_line, tokens, *idx)? {
+        let func_id = match tokens[*idx] {
         IRTok::Var(_) => {
             let func_id = *idx;
             *idx += 1;
@@ -825,19 +815,19 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
         _ => return error(*serialized_line, String::from("invalid instruction. expected function name from '%call value, function(a,b)'")),
         };
 
-        if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::LParen) {
+        if !matches!(next_result(tokens, idx), IRTok::LParen) {
             return error(*serialized_line, String::from("invalid instruction. expected '(' in between '%call value, function(a,b)'"));
         }
 
         let mut parameters = vec![];
         loop {
-            match peek_result(*serialized_line, tokens, *idx)? {
+            match &tokens[*idx] {
             IRTok::RParen => break,
             IRTok::Var(ident) => {
                 *idx += 1;
                 let param = lookup_integer_variable_id(*serialized_line, function, ident)?;
                 parameters.push(param);
-                if matches!(peek_result(*serialized_line, tokens, *idx)?, IRTok::Comma) {
+                if matches!(tokens[*idx], IRTok::Comma) {
                     *idx += 1;
                 }
             }
@@ -845,7 +835,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             IRTok::Num(num) => {
                 *idx += 1;
                 parameters.push(Op::Num(*num));
-                if matches!(peek_result(*serialized_line, tokens, *idx)?, IRTok::Comma) {
+                if matches!(tokens[*idx], IRTok::Comma) {
                     *idx += 1;
                 }
             }
@@ -854,7 +844,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             }
         }
 
-        if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::RParen) {
+        if !matches!(next_result(tokens, idx), IRTok::RParen) {
             return error(*serialized_line, String::from("invalid instruction. missing ')' in between '%call value, function(a,b)'"));
         }
         bytecode = Bytecode::Call(op, func_id, parameters);
@@ -862,7 +852,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 
     IRTok::Return => {
         *idx += 1;
-        let op = match next_result(*serialized_line, tokens, idx)? {
+        let op = match next_result(tokens, idx) {
         IRTok::Var(ident) => lookup_integer_variable_id(*serialized_line, function, ident)?,
         IRTok::Num(num) => Op::Num(*num),
         _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%ret variable'")),
@@ -873,7 +863,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
     // input/output routines.
     IRTok::Out => {
         *idx += 1;
-        let src = match next_result(*serialized_line, tokens, idx)? {
+        let src = match next_result(tokens, idx) {
         IRTok::Var(ident) => lookup_integer_variable_id(*serialized_line, function, ident)?,
         IRTok::Num(num) => Op::Num(*num),
         _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%out variable'")),
@@ -883,7 +873,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 
     IRTok::In => {
         *idx += 1;
-        let src = match next_result(*serialized_line, tokens, idx)? {
+        let src = match next_result(tokens, idx) {
         IRTok::Var(ident) => lookup_variable_dest_id(*serialized_line, function, ident)?,
         _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%input variable'")),
         };
@@ -893,15 +883,15 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
     // mathematical operators.
     IRTok::Mov => {
         *idx += 1;
-        match next_result(*serialized_line, tokens, idx)? {
+        match next_result(tokens, idx) {
         IRTok::Var(ident) => {
             let dest = lookup_variable_dest_id(*serialized_line, function, ident)?;
 
-            if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Comma) {
+            if !matches!(next_result(tokens, idx), IRTok::Comma) {
                 return error(*serialized_line, String::from("invalid instruction. missing comma. expected format like '%mov variable, 10'"));
             }
             
-            let src = match next_result(*serialized_line, tokens, idx)? {
+            let src = match next_result(tokens, idx) {
             IRTok::Var(ident) => {
                 if let Some(id) = function.variables.get(ident) {
                      match id {
@@ -920,7 +910,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             }
 
             IRTok::LBrace => {
-                match (next_result(*serialized_line, tokens,idx)?, next_result(*serialized_line, tokens,idx)?, next_result(*serialized_line, tokens,idx)?, next_result(*serialized_line, tokens,idx)?) {
+                match (next_result(tokens,idx), next_result(tokens,idx), next_result(tokens,idx), next_result(tokens,idx)) {
                 (IRTok::Var(array), IRTok::Plus, IRTok::Num(index), IRTok::RBrace) => {
                     if let Some(id) = function.variables.get(array) {
                         match id {
@@ -972,7 +962,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
         }
 
         IRTok::LBrace => {
-            let dest = match next_result(*serialized_line, tokens, idx)? {
+            let dest = match next_result(tokens, idx) {
             IRTok::Var(ident) => {
                 if let Some(id) = function.variables.get(ident) {
                     match id {
@@ -994,25 +984,25 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'")),
             };
 
-            if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Plus) {
+            if !matches!(next_result(tokens, idx), IRTok::Plus) {
                 return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'"));
             }
 
-            let index = match next_result(*serialized_line, tokens, idx)? {
+            let index = match next_result(tokens, idx) {
             IRTok::Var(id) => lookup_integer_variable_id(*serialized_line, function, id)?,
             IRTok::Num(num) => Op::Num(*num),
             _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'")),
             };
 
-            if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::RBrace) {
+            if !matches!(next_result(tokens, idx), IRTok::RBrace) {
                 return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'"));
             }
 
-            if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Comma) {
+            if !matches!(next_result(tokens, idx), IRTok::Comma) {
                 return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'"));
             }
 
-            let src = match next_result(*serialized_line, tokens, idx)? {
+            let src = match next_result(tokens, idx) {
             IRTok::Var(ident) => {
                 if let Some(id) = function.variables.get(ident) {
                      match id {
@@ -1113,7 +1103,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
     //Label,
     IRTok::Jump => {
         *idx += 1;
-        match peek_result(*serialized_line, tokens, *idx)? {
+        match tokens[*idx] {
         IRTok::Label(_) => {
             bytecode = Bytecode::Jmp(*idx);
             *idx += 1;
@@ -1131,24 +1121,24 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             return error(*serialized_line, format!("label {} already defined.", name));
         }
         bytecode = Bytecode::Label;
-        if !matches!(peek_result(*serialized_line, tokens, *idx)?, IRTok::EndInstr) {
+        if !matches!(tokens[*idx], IRTok::EndInstr) {
             return error(*serialized_line, format!("invalid opcode '{}'. labels can be declared using ':label'", name));
         }
     }
 
     IRTok::BranchIf => {
         *idx += 1;
-        let dest = match next_result(*serialized_line, tokens, idx)? {
+        let dest = match next_result(tokens, idx) {
         IRTok::Var(ident) => lookup_integer_variable_id(*serialized_line, function, ident)?,
         IRTok::Num(num) => Op::Num(*num),
         _ => return error(*serialized_line, String::from("%branch_if requires an identifier 'TF'")),
         };
 
-        if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Comma) {
+        if !matches!(next_result(tokens, idx), IRTok::Comma) {
             return error(*serialized_line, String::from("missing comma ',' from %branch_if instruction."));
         }
 
-        match peek_result(*serialized_line, tokens, *idx)? {
+        match tokens[*idx] {
         IRTok::Label(_) => {
             bytecode = Bytecode::BranchIf(dest, *idx);
             *idx += 1;
@@ -1159,17 +1149,17 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 
     IRTok::BranchIfNot => {
         *idx += 1;
-        let dest = match next_result(*serialized_line, tokens, idx)? {
+        let dest = match next_result(tokens, idx) {
         IRTok::Var(ident) => lookup_integer_variable_id(*serialized_line, function, ident)?,
         IRTok::Num(num) => Op::Num(*num),
         _ => return error(*serialized_line, String::from("%branch_ifn requires an identifier 'TF'")),
         };
 
-        if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::Comma) {
+        if !matches!(next_result(tokens, idx), IRTok::Comma) {
             return error(*serialized_line, String::from("missing ',' from %branch_ifn instruction."));
         }
 
-        match peek_result(*serialized_line, tokens, *idx)? {
+        match tokens[*idx] {
         IRTok::Label(_) => {
             bytecode = Bytecode::BranchIfn(dest, *idx);
             *idx += 1;
@@ -1193,7 +1183,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 
     }
 
-    if !matches!(next_result(*serialized_line, tokens, idx)?, IRTok::EndInstr) {
+    if !matches!(next_result(tokens, idx), IRTok::EndInstr) {
         return error(*serialized_line, String::from("expected newline."));
     }
 
@@ -1203,26 +1193,26 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 }
 
 fn addr_code3(serialized_line: usize, function: &FunctionBytecode, tokens: &Vec<IRTok>, idx: &mut usize) -> Result<(i32, Op, Op), IRError> {
-    let dest = match next_result(serialized_line, tokens, idx)? {
+    let dest = match next_result(tokens, idx) {
     IRTok::Var(ident) => lookup_variable_dest_id(serialized_line, function, ident)?,
     _ => return error(serialized_line, String::from("invalid dest.")),
     };
 
-    if !matches!(next_result(serialized_line, tokens, idx)?, IRTok::Comma) {
+    if !matches!(next_result(tokens, idx), IRTok::Comma) {
         return error(serialized_line, String::from("invalid instruction. expected comma between dest and src1."));
     }
     
-    let src1 = match next_result(serialized_line, tokens, idx)? {
+    let src1 = match next_result(tokens, idx) {
     IRTok::Var(ident) => lookup_integer_variable_id(serialized_line, function, ident)?,
     IRTok::Num(num) => Op::Num(*num),
     _ => return error(serialized_line, String::from("invalid src1.")),
     };
 
-    if !matches!(next_result(serialized_line, tokens, idx)?, IRTok::Comma) {
+    if !matches!(next_result(tokens, idx), IRTok::Comma) {
         return error(serialized_line, String::from("invalid instruction. expected comma between src1 and src2."));
     }
 
-    let src2 = match next_result(serialized_line, tokens, idx)? {
+    let src2 = match next_result(tokens, idx) {
     IRTok::Var(ident) => lookup_integer_variable_id(serialized_line, function, ident)?,
     IRTok::Num(num) => Op::Num(*num),
     _ => return error(serialized_line, String::from("invalid src2.")),
@@ -1231,40 +1221,10 @@ fn addr_code3(serialized_line: usize, function: &FunctionBytecode, tokens: &Vec<
     return Ok((dest, src1, src2));
 }
 
-fn next<'a>(tokens: &'a Vec<IRTok>, index: &mut usize) -> Option<&'a IRTok> {
-    if *index < tokens.len() {
-        let ret = *index;
-        *index += 1;
-        return Some(&tokens[ret])
-    } else {
-        return None
-    }
-}
-
-fn peek_result<'a>(serialized_line: usize, tokens: &'a Vec<IRTok>, index: usize) -> Result<&'a IRTok, IRError> {
-    if index < tokens.len() {
-        return Ok(&tokens[index]);
-    } else {
-        return error(serialized_line, String::from("unexpected end."));
-    }
-}
-
-fn peek<'a>(tokens: &'a Vec<IRTok>, index: usize) -> Option<&'a IRTok>{
-    if index < tokens.len() {
-        return Some(&tokens[index])
-    } else {
-        return None
-    }
-}
-
-fn next_result<'a>(serialized_line: usize, tokens: &'a Vec<IRTok>, index: &mut usize) -> Result<&'a IRTok, IRError> {
-    if *index < tokens.len() {
-        let ret = *index;
-        *index += 1;
-        return Ok(&tokens[ret])
-    } else {
-        return error(serialized_line, String::from("unexpected end."))
-    }
+fn next_result<'a>(tokens: &'a Vec<IRTok>, index: &mut usize) -> &'a IRTok {
+    let ret = *index;
+    *index += 1;
+    &tokens[ret]
 }
 
 
@@ -1405,6 +1365,7 @@ enum IRTok {
 
     Num(i32),
     Var(String),
+    End,
 }
 
 #[derive(Debug, Clone)]
