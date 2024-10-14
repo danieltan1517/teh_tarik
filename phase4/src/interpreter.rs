@@ -389,7 +389,6 @@ fn parse_func_ir(serialized_line: &mut usize, tokens: &Vec<IRTok>, idx: &mut usi
 
 use std::collections::HashMap;
 
-#[derive(Debug)]
 struct FunctionBytecode {
     name: String,
     parameters: usize,
@@ -997,6 +996,7 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
 
             let index = match next_result(tokens, idx) {
             IRTok::Var(id) => lookup_integer_variable_id(*serialized_line, function, id)?,
+
             IRTok::Num(num) => Op::Num(*num),
             _ => return error(*serialized_line, String::from("invalid instruction. expected format like '%mov [array + 10], 10'")),
             };
@@ -1025,6 +1025,10 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
                      let f = format!("invalid instruction. identifier '{}' has not been defined.", ident);
                      return error(*serialized_line, f);
                 }
+            }
+
+            IRTok::LBrace => {
+                return error(*serialized_line, String::from("invalid instruction. cannot perform write and read at the same time. i.e. operations such as %mov [array + 0], [array + 1] are illegal. split the instruction into multiple lines to get the desired bytecode.\n"));
             }
 
             IRTok::Num(num) => MemRead::Number(*num),
@@ -1145,11 +1149,16 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             return error(*serialized_line, String::from("missing comma ',' from %branch_if instruction."));
         }
 
-        match tokens[*idx] {
+        match &tokens[*idx] {
         IRTok::Label(_) => {
             bytecode = Bytecode::BranchIf(dest, *idx);
             *idx += 1;
         }
+
+        IRTok::Var(s) => {
+             return error(*serialized_line, format!("Type mismatch. %branch_if requires a label ':label', but %branch_if has been given a variable '{s}'"));
+        }
+
         _ => return error(*serialized_line, String::from("%branch_if requires a label ':label'. (e.g. '%branch_if TF, :label')")),
         }
     }
@@ -1166,11 +1175,16 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             return error(*serialized_line, String::from("missing ',' from %branch_ifn instruction."));
         }
 
-        match tokens[*idx] {
+        match &tokens[*idx] {
         IRTok::Label(_) => {
             bytecode = Bytecode::BranchIfn(dest, *idx);
             *idx += 1;
         }
+
+        IRTok::Var(s) => {
+             return error(*serialized_line, format!("Type mismatch. %branch_ifn requires a label ':label', but %branch_if has been given a variable '{s}'"));
+        }
+
         _ => return error(*serialized_line, String::from("%branch_ifn requires a label ':label'. (e.g. '%branch_ifn TF, :label')")),
         }
     }
@@ -1315,7 +1329,6 @@ mod ir_tests {
 }
 
 
-#[derive(Debug)]
 enum IRTok {
     // func
     Func,
@@ -1369,25 +1382,22 @@ enum IRTok {
     End,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 enum Op {
     Num(i32),
     Var(i32),
 }
 
-#[derive(Debug)]
 enum VariableType {
     IntVar(i32),
     ArrayVar(i32, i32),
 }
 
-#[derive(Debug)]
 enum MemWrite {
     IntVar(i32),
     ArrayWrite(i32, Op),
 }
 
-#[derive(Debug)]
 enum MemRead {
     IntVar(i32),
     Number(i32),
@@ -1412,7 +1422,6 @@ fn read_memory(variables: &HashMap<i32, i32>, arrays: &HashMap<i32, Vec<i32>>, r
 }
 
 
-#[derive(Debug)]
 enum Bytecode {
 
     // EndFunc
