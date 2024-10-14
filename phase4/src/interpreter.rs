@@ -899,6 +899,11 @@ fn parse_instruction(serialized_line: &mut usize, line: usize, function: &mut Fu
             
             let src = match next_result(tokens, idx) {
             IRTok::Var(ident) => {
+                if matches!(tokens[*idx], IRTok::LParen) {
+                    return error(*serialized_line, String::from("misplaced left parenthesis. perhaps it was supposed to be %call a, function(a,b) instead of %mov a, function(a,b)?"));
+                }
+
+
                 if let Some(id) = function.variables.get(ident) {
                      match id {
                      VariableType::IntVar(id) => MemRead::IntVar(*id),
