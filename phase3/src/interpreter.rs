@@ -156,7 +156,7 @@ fn lex_ir(code: &str) -> Result<Vec<IRTok>, String> {
             }
         }
 
-        ' ' => {
+        ' ' | '\t' | '\r' => {
             i += 1;
         }
 
